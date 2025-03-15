@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 export default function MenuScreen() {
     return (
         <LinearGradient colors={["#445b73", "#749bb8"]} style={styles.container}>
-            <Stack.Screen options={{ header: () => <CustomHeader title="Дополнительные" /> }} />
+            <Stack.Screen options={{ header: () => <CustomHeader title="Дополнительные"/> }} />
             <Text style={styles.text}>Меню</Text>
         </LinearGradient>
     );

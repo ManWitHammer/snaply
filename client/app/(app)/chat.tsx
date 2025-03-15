@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 export default function ChatScreen() {
   return (
     <LinearGradient colors={["#445b73", "#749bb8"]} style={styles.container}>
-        <Stack.Screen options={{ header: () => <CustomHeader title="Чат" /> }} />
+        <Stack.Screen options={{ header: () => <CustomHeader title="Чат"/> }} />
         <Text style={styles.text}>Чат</Text>
     </LinearGradient>
   );

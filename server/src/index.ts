@@ -10,10 +10,11 @@ import rateLimit from 'express-rate-limit'
 const app = express()
 const PORT = process.env.PORT || 3000
 
+app.use('/uploads', express.static('uploads'))
 app.use(cors({
     origin: "http://localhost:8081",
     credentials: true,
-	methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+  	methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
 }))
 app.use(bodyParser.json())
 app.use(cookieParser())
@@ -21,8 +22,8 @@ app.use('/api', router)
 app.use(errorMiddleware)
 
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+  windowMs: 0.5 * 60 * 1000,
+  max: 15,
   message: { message: 'Превышено количество запросов. Подождите не меньше минуты' },
 }))
 

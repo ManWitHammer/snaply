@@ -8,7 +8,7 @@ export default function HomeScreen() {
   return (
     <LinearGradient colors={["#445b73", "#749bb8"]} style={styles.container}>
       <Stack.Screen options={{
-        header: () => <CustomHeader title="Главная" />
+        header: () => <CustomHeader title="Главная"/>
       }} />
 
       <View style={styles.storiesContainer}>
@@ -16,7 +16,6 @@ export default function HomeScreen() {
           <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.storyText}>История</Text>
         </View>
-
       </View>
     </LinearGradient>
   );

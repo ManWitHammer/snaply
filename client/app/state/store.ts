@@ -1,13 +1,16 @@
 import { create } from 'zustand'
 import axios from 'axios'
 import { apiUrl } from 'appConfig'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 interface IUser {
+    id?: string
     email: string
     nickname: string
     name: string
     surname: string
     password?: string
+    avatar?: string
 }
 
 interface FormStore {
@@ -23,8 +26,10 @@ interface FormStore {
     setField: (field: keyof IUser, value: string) => void
     registration: () => Promise<boolean>
     login: () => Promise<boolean>
+    checkAuth: () => Promise<boolean>
     validateField: (field: keyof IUser, value: string) => void
     setErrorMessage: (message: string) => void
+    setAvatar: (avatar: FormData) => Promise<boolean>
 }
 
 const useStore = create<FormStore>((set, get) => ({
@@ -33,7 +38,7 @@ const useStore = create<FormStore>((set, get) => ({
     errors: {},
 
     setField: (field, value) => {
-        const user = { ...get().user ?? { email: '', nickname: '', name: '', surname: '', password: '' } }
+        const user = { ...get().user ?? { email: '', nickname: '', name: '', surname: '' } }
         user[field] = value
         set({ user })
     },
@@ -133,11 +138,12 @@ const useStore = create<FormStore>((set, get) => ({
                     password: user?.password,
                 }, {withCredentials: true})
 
-                if (res.data) return true
-                else {
-                    console.log(res)
-                    return false
+                if (res.data) {
+                    set({user: res.data.userDto})
+                    await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
+                    return true
                 }
+                else return false
             } catch (error: any) {
                 if (error.response) {
                     set({errorMessage: error.response.data.message})
@@ -162,11 +168,12 @@ const useStore = create<FormStore>((set, get) => ({
                 password: user?.password,
                 nickname: user?.nickname,
             }, {withCredentials: true})
-            if (res.data) return true
-            else {
-                console.log(res)
-                return false
-            } 
+            if (res.data) {
+                set({user: res.data.userDto})
+                await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
+                return true
+            }
+            else return false
         } catch(error: any) {
             if (error.response) {
                 set({errorMessage: error.response.data.message})
@@ -177,7 +184,57 @@ const useStore = create<FormStore>((set, get) => ({
             }
             return false
         }
-    }
+    },
+    checkAuth: async () => {
+		try {
+            const AuthToken = await AsyncStorage.getItem('AuthToken')
+			const { data } = await axios.get(`${apiUrl}/api/checkauth`, {
+				headers: {
+                    Authorization: AuthToken
+                }
+			})
+			if (data) {
+                console.log(data)
+                set({user: data.userDto})
+				return true
+			} 
+            else return false
+		} catch (err: any) {
+			return false
+		}
+	},
+    setAvatar: async (avatar: FormData) => {
+        try {
+          const AuthToken = await AsyncStorage.getItem('AuthToken');
+          const res = await axios.post(`${apiUrl}/api/setavatar`, avatar, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: AuthToken,
+            },
+          });
+          if (res.data) {
+            const updatedUser = { 
+              ...get().user ?? { email: '', nickname: '', name: '', surname: '' }, 
+              avatar: res.data.user
+            };
+            set({ user: updatedUser });
+            return true;
+          } else {
+            return false;
+          }
+        } catch (error: any) {
+          if (error.response) {
+            set({ errorMessage: error.response.data.message });
+          } else if (error.request) {
+            console.log(error.request)
+            set({ errorMessage: 'Нет ответа от сервера' });
+          } else {
+            set({ errorMessage: 'Непредвиденная ошибка' });
+          }
+          console.log(error)
+          return false;
+        }
+      },
 }))
 
 export default useStore

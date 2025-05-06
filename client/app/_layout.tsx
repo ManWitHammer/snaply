@@ -1,16 +1,16 @@
 import { Stack } from 'expo-router'
-import { useAtom } from 'jotai'
-import { isAuthenticatedAtom } from './state/auth'
+import useStore from './state/store'
 import { StatusBar } from 'expo-status-bar'
 
 export default function RootLayout() {
-	const [isAuthenticated] = useAtom(isAuthenticatedAtom)
+	const { isAuth } = useStore()
 
 	return (
     <>
-      <StatusBar style='light' backgroundColor='#445b73' />
+      <StatusBar style='light' backgroundColor='transparent' translucent/>
       <Stack>
-        {!isAuthenticated ? (
+        <Stack.Screen name='index' options={{ headerShown: false }} />
+        {!isAuth ? (
           <Stack.Screen
             name='(auth)'
             options={{
@@ -25,7 +25,8 @@ export default function RootLayout() {
             }}
           ></Stack.Screen>
         )}
-        <Stack.Screen name='+not-found' options={{ title: 'Not Found' }} />
+        <Stack.Screen name='+not-found' options={{ title: 'Not Found', headerShown: false }} />
+        <Stack.Screen name='not-activate' options={{ title: 'Not Activate', headerShown: false }} />
       </Stack>
     </>
 	)

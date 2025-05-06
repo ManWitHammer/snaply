@@ -1,52 +1,150 @@
-import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import * as NavigationBar from "expo-navigation-bar";
-import { useEffect } from "react";
+import { Stack } from 'expo-router'
+import * as NavigationBar from "expo-navigation-bar"
+import { useEffect } from "react"
+import { Dimensions, Platform } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
+import InApiError from "../components/InApiError"
+import { StatusBar } from 'expo-status-bar';
+import { useAppearanceStore } from '../state/appStore'
+import BackgroundMusicPlayer from '../hooks/useBackgroundMusic'
 
-export default function Layout() {
+export default function RootLayout() {
+  const { getGradient } = useAppearanceStore()
+  const activeColors = getGradient();
   useEffect(() => {
-    NavigationBar.setBackgroundColorAsync("#445b73");
+    NavigationBar.setBackgroundColorAsync(activeColors[0]);
     NavigationBar.setButtonStyleAsync("light");
   }, []);
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: "#445b73",
-          borderTopWidth: 0,
-          height: 50,
-        },
-        tabBarActiveTintColor: "#fff",
-        tabBarInactiveTintColor: "#a0a0a0",
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "bold",
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Главная",
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Чат",
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="menu"
-        options={{
-          title: "Меню",
-          tabBarIcon: ({ color, size }) => <Ionicons name="menu" size={size} color={color} />,
-        }}
-      />
-       <Tabs.Screen name="profile/[id]" options={{ href: null }} />
-    </Tabs>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: activeColors[0] }}>
+      <StatusBar style="light" />
+      <BackgroundMusicPlayer />
+      <BottomSheetModalProvider>
+        <InApiError style={{ width: Dimensions.get("window").width - 40, marginLeft: 20 }} />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="(modal)/chat/[id]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/photos/[id]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/post/[id]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/profile/[id]" 
+            options={{ 
+              presentation: 'modal',
+              headerShown: false,
+              animation: 'simple_push'
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/search/[prompt]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/account" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/appearance" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/create-post" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/friends" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/privacy" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/upload-photo" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/app-settings" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+        </Stack>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

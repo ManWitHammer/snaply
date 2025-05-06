@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken'
 import TokenModel from '../models/token-model'
+import 'dotenv/config'
 
+const JWT_TOKEN = process.env.JWT_SECRET!
 
 class tokenService {
     async findToken(refreshToken: string) {
@@ -8,31 +10,18 @@ class tokenService {
         return tokenData
     }
 	async generateTokens(payload: object) {
-		const accessToken = jwt.sign(payload, "asdasdasdasdas", {
-			expiresIn: '15m'
-		})
-		const refreshToken = jwt.sign(payload, "asdasdasdsaasd", {
+		const refreshToken = jwt.sign(payload, JWT_TOKEN, {
 			expiresIn: '30d'
 		})
 
-		return { accessToken, refreshToken }
-	}
-
-	async validateAccessToken(token: string) {
-		try {
-			const userData = jwt.verify(token, "asdasdasdasdas")
-			console.log(userData)
-			return userData
-		} catch (err) {
-			return null
-		}
+		return { refreshToken }
 	}
 
 	async validateRefreshToken(token: string) {
 		try {
 			const trueToken = await this.findToken(token)
 			if (trueToken) {
-				const userData = jwt.verify(token, "asdasdasdsaasd")
+				const userData = jwt.verify(token, JWT_TOKEN)
 				return userData
 			}
 			return null

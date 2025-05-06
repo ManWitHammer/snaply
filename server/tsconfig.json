@@ -10,5 +10,5 @@
         "target": "ES2015", // или выше
         "downlevelIteration": true
     },
-    "include": ["src/**/*"]
+    "include": ["src/**/*", "index.js"]
 }

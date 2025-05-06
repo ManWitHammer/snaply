@@ -1,9 +1,15 @@
 import * as React from "react"
 import Svg, { SvgProps, Path, Ellipse } from "react-native-svg"
-const NotFound = (props: SvgProps) => (
+
+interface NotFoundProps extends SvgProps {
+  width?: number
+  height?: number
+}
+
+const NotFound = ({ width = 80, height = 80, ...props }: NotFoundProps) => (
   <Svg
-    width={80}
-    height={80}
+    width={width}
+    height={height}
     viewBox="0 0 80 80"
     {...props}
   >

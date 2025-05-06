@@ -1,10 +1,23 @@
-import fs from 'fs'
-import multer, { FileFilterCallback  } from 'multer'
 import path from 'path'
-import { Request, Response, NextFunction } from 'express'
+import fs from 'fs'
+import multer, { FileFilterCallback } from 'multer'
 import { ApiError } from '../exceptions/api-error'
-import tokenService from '../services/token-service'
-import { UserModel } from '../models/user-model'
+import { Request } from 'express'
+
+interface DeletionResultSuccess {
+	filename: string
+	path: string
+	status: 'success'
+  }
+  
+  interface DeletionResultError {
+	filename: string
+	path: string
+	status: 'error'
+	error: string
+  }
+  
+  type DeletionResult = DeletionResultSuccess | DeletionResultError
 
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
@@ -19,7 +32,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
     storage: storage,
-    limits: { fileSize: 1024 * 1024 * 4, files: 1 },
+    limits: { fileSize: 1024 * 1024 * 6, files: 1 },
     fileFilter: (req, file, cb: FileFilterCallback) => {
         if (
             file.mimetype === 'image/png' ||
@@ -39,49 +52,108 @@ export const upload = multer({
     }
 })
 
-export const deleteFileOnError = (req: Request, res: Response, next: NextFunction) => {
-	const prevResponse = res
-	console.log(req.file?.path) 
-
-	if (req.file) {
-		try {
-			console.log('Удаляю файл: ', req.file.path)
-			fs.unlink(req.file.path, err => {
-				if (err) {
-					console.error('Ошибка при удалении файла:', err)
-					return next(err)
-				}
-				console.log('Файл успешно удален')
-				next(prevResponse)
-			})
-		} catch (err) {
-			console.error('Не удалось удалить файл:', err)
-			next(err)
+export const imageUploads = multer({
+    storage: storage,
+    limits: { fileSize: 1024 * 1024 * 8, files: 10 },
+    fileFilter: (req, file, cb) => {
+		const allowedTypes = [
+			'image/jpeg',
+			'image/png',
+			'image/webp',
+			'image/gif'
+		]
+		
+		if (allowedTypes.includes(file.mimetype)) {
+			cb(null, true)
+		} else {
+			cb(ApiError.BadRequest(
+				'Допустимые форматы: JPEG, PNG, WEBP, GIF'
+			))
 		}
-	} else {
-		next() 
 	}
-}
+})
 
-export const deletePreviousFile = async (req: Request) => {
-	const authHeader = req.headers.authorization as string
+export const uploads = multer({
+	storage: storage,
+	limits: { 
+	  fileSize: 1024 * 1024 * 8,
+	  files: 5 
+	},
+	fileFilter: (req, file, cb) => {
+		const allowedTypes = [
+			'image/jpeg',
+			'image/png',
+			'image/webp',
+			'image/gif'
+		]
+		
+		if (allowedTypes.includes(file.mimetype)) {
+			cb(null, true)
+		} else {
+			cb(ApiError.BadRequest(
+				'Допустимые форматы: JPEG, PNG, WEBP, GIF'
+			))
+		}
+	}
+})
 
-	const userData = await tokenService.validateRefreshToken(authHeader)
-    if (typeof userData !== 'object' || !userData || !('email' in userData)) {
-        throw ApiError.UnauthorizedError()
-    }
-
-    const user = await UserModel.findOne({ email: userData.email })
-
-    if (!user) throw ApiError.UnauthorizedError()
-
-	if (user.avatar) {
-		console.log('Удаляю файл: ', user.avatar)
-		fs.unlink(user.avatar, err => {
-			if (err) {
-				console.error('Ошибка при удалении файла:', err)
-			}
-			console.log('Файл успешно удален')
-		})
+export const deleteUploadedFiles = async (req: Request) => {
+	const filesToDelete: Express.Multer.File[] = []
+  
+	if (req.file) {
+	  filesToDelete.push(req.file)
+	}
+	
+	if (req.files && Array.isArray(req.files)) {
+	  filesToDelete.push(...req.files)
+	}
+  
+	if (filesToDelete.length === 0) {
+	  throw ApiError.BadRequest('Не найдено файлов для удаления')
+	}
+  
+	const deletionResults: DeletionResult[] = await Promise.all(
+	  filesToDelete.map(async (file) => {
+		try {
+		  await fs.promises.unlink(file.path)
+		  return {
+			filename: file.originalname,
+			path: file.path,
+			status: 'success' as const
+		  }
+		} catch (error) {
+		  return {
+			filename: file.originalname,
+			path: file.path,
+			status: 'error' as const,
+			error: error instanceof Error ? error.message : 'Unknown error'
+		  }
+		}
+	  })
+	)
+  
+	const successResults = deletionResults.filter(
+	  (result): result is DeletionResultSuccess => result.status === 'success'
+	)
+	
+	const errorResults = deletionResults.filter(
+	  (result): result is DeletionResultError => result.status === 'error'
+	)
+  
+	console.log(`Удалено файлов: ${successResults.length}, ошибок: ${errorResults.length}`)
+  
+	if (errorResults.length > 0) {
+	  const errorMessages = errorResults
+		.map(r => `Файл ${r.filename}: ${r.error}`)
+		.join('; ')
+  
+	  throw ApiError.BadRequest(`Ошибки при удалении файлов: ${errorMessages}`)
+	}
+  
+	return {
+	  totalFiles: filesToDelete.length,
+	  deletedFiles: successResults.length,
+	  failedFiles: errorResults.length,
+	  details: deletionResults
 	}
 }

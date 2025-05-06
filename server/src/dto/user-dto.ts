@@ -7,6 +7,8 @@ export default class UserDto {
     email: string
     id: string
     avatar: string
+    description: string
+    isActivated: boolean
   
     constructor(model: IUser) { 
       this.surname = model.surname
@@ -14,6 +16,8 @@ export default class UserDto {
       this.nickname = model.nickname
       this.email = model.email
       this.id = model._id!.toString()
-      this.avatar = "http://192.168.0.54:3000/" + model.avatar || ''
+      this.avatar = model.avatar ? model.avatar : ''
+      this.description = model.description ? model.description : ''
+      this.isActivated = model.isActivated
     }
   }

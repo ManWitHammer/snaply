@@ -9,29 +9,27 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  Pressable
+  TouchableOpacity
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import CustomInput from "../components/CustomInput"
-import useStore from "@/state/store"
-import InApiError from "../components/InApiError"
-import { isAuthenticatedAtom } from '../state/auth'
-import { useAtom } from "jotai"
+import useStore from "../state/store"
+import { useAppearanceStore } from "../state/appStore"
 
 export default function RegisterScreen() {
   const router = useRouter()
   const { user, errors, setField, validateField, registration } = useStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom)
+    const { getGradient } = useAppearanceStore()
+    const activeColors = getGradient()
 
   const handleRegistration = async() => {
     setIsLoading(true)
     try {
       const res = await registration()
       if (res) {
-        setIsAuthenticated(true)
-        router.replace('/(app)')
+        router.replace('/not-activate')
       }
     } catch(err) {
       console.log(err)
@@ -45,8 +43,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, width: "100%" }}
     >
-      <LinearGradient colors={["#445b73", "#749bb8"]} style={styles.container}>
-        <InApiError/> 
+      <LinearGradient colors={activeColors} style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
@@ -111,22 +108,13 @@ export default function RegisterScreen() {
               }}
             />
 
-            <Pressable onPress={handleRegistration} disabled={isLoading} style={{...styles.button, padding: 0}}>
-              <LinearGradient
-                colors={["#EC6F66", "#F3A183"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.button}
-              > 
-                {isLoading ? (
-                  <>
-                    <ActivityIndicator color='#fff' />
-                  </>
-                ) : (
-                  <Text style={styles.buttonText}>Зарегистрироваться</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+            <TouchableOpacity onPress={handleRegistration} disabled={isLoading} style={styles.button}>
+              {isLoading ? (
+                <ActivityIndicator color='#445b73' />
+              ) : (
+                <Text style={[styles.buttonText, { color: activeColors[0] }]}>Зарегистрироваться</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
         <Text style={styles.linkText}>Есть аккаунт? <Link href="/login" style={styles.link}>Авторизоваться</Link></Text>
@@ -164,12 +152,12 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 15,
-    borderRadius: 12,
-    width: Dimensions.get("window").width * 0.9 - 40,
+    borderRadius: 25,
+    backgroundColor: 'white',
+    width: Dimensions.get("screen").width * 0.9 - 40,
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },

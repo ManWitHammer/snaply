@@ -3,22 +3,13 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Activity
 import { Ionicons } from "@expo/vector-icons"
 import CustomLeftModal from "../../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
-import useStore from "../../../state/store"
-import { usePostsStore, Post, IUser } from "../../../state/postsStore"
+import useStore, { ISearchDto } from "../../../state/store"
+import usePostsStore, { Post } from "../../../state/postsStore"
 import { useLocalSearchParams } from "expo-router"
-import { useAppearanceStore } from "../../../state/appStore"
+import useAppearanceStore from "../../../state/appStore"
 import PostItem from "../../../components/PostItem"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import UserListItem from "../../../components/UserItem"
-
-interface ISearchDto {
-  _id: string
-  nickname: string
-  name: string
-  surname: string
-  avatar: string | null
-  friends?: string[]
-}
 
 const SearchScreen = () => {
   const { prompt } = useLocalSearchParams()

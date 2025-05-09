@@ -97,12 +97,11 @@ class ChatService {
         const totalCount = totalMessages[0]?.count || 0;
             
             // Вычисляем старт и лимит
-        const startIndex = totalCount - (page * perPage); // откуда начинать
+        const startIndex = totalCount - (page * perPage)
         const sliceStart = Math.max(startIndex, 0);
         const sliceLimit = startIndex < 0 ? perPage + startIndex : perPage;
             
         if (sliceLimit <= 0) {
-                // Если сообщений больше нет — возвращаем пусто
             return {
                 messages: [],
                 hasMore: false,
@@ -148,7 +147,7 @@ class ChatService {
         }
     }
     
-    async sendMessage(authHeader: string, chatId: string, message: string | null, image: string | null, replyTo?: string, forwardedFromUser?: string, forwardedFromPost?: string) {
+    async sendMessage(authHeader: string, chatId: string, message: string | null, image: string | null, replyTo?: string, forwardedFromUser?: string, forwardedFromPost?: string, imageFromMessage?: string) {
         if (!authHeader) throw ApiError.UnauthorizedError()
     
         const userData = await tokenService.validateRefreshToken(authHeader)
@@ -161,7 +160,9 @@ class ChatService {
     
         const userId = user._id as Types.ObjectId
     
-        if (!message && !image) throw ApiError.BadRequest('Сообщение не может быть пустым')
+        if (!message && !image) throw ApiError.BadRequest('Текст сообщения не может быть пустым')
+        if (message && message.trim().length === 0) throw ApiError.BadRequest('Текст сообщения не может быть пустым')
+        if (message && message.length > 2500) throw ApiError.BadRequest('Превышен лимит в 2500 символов')
     
         const chat = await ChatModel.findOne({
             _id: chatId,
@@ -202,7 +203,7 @@ class ChatService {
         const userMessage: any = {
             sender: userId,
             content: message || '',
-            image: imageUrl,
+            image: imageFromMessage ? imageFromMessage : imageUrl,
             timestamp: new Date(),
             ...(forwardedFromUser && { forwardedFromUser }),
             ...(forwardedFromPost && { forwardedFromPost }),

@@ -12,10 +12,10 @@ import { Image } from "expo-image"
 const { width } = Dimensions.get('window')
 const PHOTO_SIZE = width / 3 - 10
 
-export default function PhotosScreen() {
+export default function SharedImagesScreen() {
     const { id } = useLocalSearchParams()
     const { getGradient } = useAppearanceStore()
-    const { fetchPhotos } = useStore()
+    const { fetchSharedImages } = useStore()
     const [photos, setPhotos] = useState<string[]>([])
     const [page, setPage] = useState(1)
     const [loading, setLoading] = useState(false)
@@ -27,7 +27,7 @@ export default function PhotosScreen() {
     useEffect(() => {
         const fetchPhotosFromState = async () => {
             setLoading(true)
-            const res = await fetchPhotos(id as string, page)
+            const res = await fetchSharedImages(id as string, page)
             setPhotos(res.data)
             setTotal(res.total)
             setLoading(false)
@@ -55,7 +55,7 @@ export default function PhotosScreen() {
     )
 
    return (
-      <CustomLeftModal title={`Все фото (${total})`}>
+      <CustomLeftModal title={`Общие фото (${total})`}>
         <LinearGradient colors={activeColors} style={styles.container}>
             <FlatList
                 data={photos}

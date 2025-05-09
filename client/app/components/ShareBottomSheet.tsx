@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import NotFound from '../../assets/not-found'
-import { useChatsStore, Chat, ChatMessage, ChatParticipant } from '../state/chatsStore'
+import useChatsStore, { Chat, ChatMessage, ChatParticipant } from '../state/chatsStore'
 import { Post } from '../state/postsStore'
-import { useAppearanceStore } from '../state/appStore'
+import useAppearanceStore from '../state/appStore'
 import { useRouter } from "expo-router"
+import { Image } from "expo-image"
 
 interface ShareBottomSheetProps {
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>
@@ -25,18 +26,21 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
   const activeColors = getGradient()
   const snapPoints = useMemo(() => ['40%', "60%"], [])
   const { fetchChats, chats, loading, sendMessage } = useChatsStore()
+  const [localLoading, setLocalLoading] = useState(false)
   const [localChats, setLocalChats] = useState<Chat[]>([])
     
   const handleShareToChat = async (chatId: string) => {
     try {
       if (!selectedMessage && !selectedPost) return
-
+      setLocalLoading(true)
       const formData = new FormData()
 
       if (selectedMessage) {
         if (!selectedMessage.content || !otherParticipant?._id) return
         const message = selectedMessage.content
+        const image = selectedMessage.image
         formData.append('message', message)
+        formData.append('imageFromMessage', image)
         formData.append("forwardedFromUser", otherParticipant._id)
       }
 
@@ -56,6 +60,8 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
       }
     } catch (error) {
       console.error('Ошибка при отправке в чат:', error)
+    } finally {
+      setLocalLoading(false)
     }
   }    
     
@@ -98,11 +104,13 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
             <TouchableOpacity
               style={{ padding: 12, flexDirection: 'row', alignItems: 'center' }}
               onPress={() => handleShareToChat(item.chatId)}
+              disabled={localLoading}
             >
               {item.participant.avatar ? (
-                <Image
-                  source={{ uri: item.participant.avatar }}
+                <Image 
+                  source={{ uri: item.participant.avatar } }
                   style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
+                  placeholder={{ blurhash: new URL(item.participant.avatar).search.slice(1) }}
                 />
               ) : (
                 <View

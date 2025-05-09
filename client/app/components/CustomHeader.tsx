@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { View, TouchableOpacity, StyleSheet, Text, Dimensions } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import useStore from "../state/store";
+import { useEffect } from "react"
+import { View, TouchableOpacity, StyleSheet, Text, Dimensions } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import useStore from "../state/store"
 import * as NavigationBar from "expo-navigation-bar"
-import { useAppearanceStore } from "../state/appStore";
+import useAppearanceStore from "../state/appStore"
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -23,38 +23,38 @@ interface AccountInfo {
 }
 
 interface CustomHeaderProps {
-  showSearch?: boolean;
-  back?: () => void;
-  showBack?: boolean;
-  title?: string;
-  accountInfo?: AccountInfo;
+  showSearch?: boolean
+  back?: () => void
+  showBack?: boolean
+  title?: string
+  accountInfo?: AccountInfo
 }
 
-const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedView = Animated.createAnimatedComponent(View)
 
 const CustomHeader = ({ showBack = false, showSearch = false, title, back, accountInfo }: CustomHeaderProps) => {
-  const { user } = useStore();
-  const router = useRouter();
-  const screenWidth = Dimensions.get("window").width;
+  const { user } = useStore()
+  const router = useRouter()
+  const screenWidth = Dimensions.get("window").width
 
-  const getGradient = useAppearanceStore(state => state.getGradient);
-  const currentTheme = useAppearanceStore(state => state.currentTheme);
-  const gradientColors = getGradient();
+  const getGradient = useAppearanceStore(state => state.getGradient)
+  const currentTheme = useAppearanceStore(state => state.currentTheme)
+  const gradientColors = getGradient()
   
-  const backgroundColor = useSharedValue(gradientColors[0]);
+  const backgroundColor = useSharedValue(gradientColors[0])
   
   useEffect(() => {
     backgroundColor.value = withTiming(gradientColors[0], {
       duration: 500,
       easing: Easing.inOut(Easing.ease)
-    });
+    })
     NavigationBar.setBackgroundColorAsync(gradientColors[0])
     NavigationBar.setButtonStyleAsync("light")
-  }, [currentTheme]);
+  }, [currentTheme])
 
   const animatedStyle = useAnimatedStyle(() => ({
     backgroundColor: backgroundColor.value
-  }));
+  }))
 
   return (
     <AnimatedView style={[styles.headerContainer, animatedStyle]}>
@@ -68,7 +68,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
             <Image 
               source={{ uri: `${user.avatar}` }} 
               style={styles.avatar} 
-              placeholder={{ blurhash: user.avatar.split("?")[1] }}
+              placeholder={{ blurhash: new URL(user.avatar).search.slice(1) }}
             />
           ) : (
             <Ionicons name="person-circle-outline" size={30} color="#fff" />
@@ -83,7 +83,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
               <Image
                 source={{ uri: accountInfo.avatar }}
                 style={styles.avatarLarge}
-                placeholder={{ blurhash: accountInfo.avatar.split("?")[1] }}
+                placeholder={{ blurhash: new URL(accountInfo.avatar).search.slice(1) }}
               />
             ) : (
               <Ionicons name="person-circle-outline" size={36} color="#fff" />
@@ -93,7 +93,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
           <View>
             <Text style={styles.accountName}>{accountInfo.name} {accountInfo.surname}</Text>
             <Text style={styles.statusText}>
-              {accountInfo.typing ? 'печатает...' : accountInfo.status === 'online' ? 'в сети' : 'не в сети'}
+              {accountInfo.typing ? 'печатает...' : accountInfo.status === 'online' ? 'В сети' : 'Не в сети'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -109,8 +109,8 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
 
       <View style={[styles.bottomLine, { width: screenWidth * 0.9 }]} />
     </AnimatedView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   headerContainer: {
@@ -174,6 +174,6 @@ const styles = StyleSheet.create({
     color: "#E0E0E0",
     fontSize: 12,
   },
-});
+})
 
-export default CustomHeader;
+export default CustomHeader

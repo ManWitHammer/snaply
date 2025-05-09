@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router"
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ScrollView } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import { useAppearanceStore } from "../state/appStore"
+import useAppearanceStore from "../state/appStore"
 
 export default function AuthChoiceScreen() {
     const router = useRouter()
@@ -10,24 +10,24 @@ export default function AuthChoiceScreen() {
 
     return (
         <LinearGradient colors={activeColors} style={styles.container}>
-            <View style={styles.content}>
-                <View></View>
-                <View style={{alignItems: "center"}}>
-                  <Image source={require("../../assets/icon.png")} style={{width: 150, height: 150, marginBottom: 20}}/>
-                  <Text style={styles.title}>Добро пожаловать</Text>
-                  <Text style={styles.subtitle}>в snaply!</Text>
-                </View>
-                <View>
-                  <TouchableOpacity onPress={() => router.push("/login")} style={styles.button}>
-                    <Text style={[styles.buttonText, { color: activeColors[0] }]}>Войти</Text>
-                  </TouchableOpacity>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <View style={styles.content}>
+                    <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
+                      <Image source={require("../../assets/icon.png")} style={{width: 150, height: 150, marginBottom: 20}}/>
+                      <Text style={styles.title}>Добро пожаловать</Text>
+                      <Text style={styles.subtitle}>в snaply!</Text>
+                    </View>
+                    <View>
+                      <TouchableOpacity onPress={() => router.push("/login")} style={styles.button}>
+                        <Text style={[styles.buttonText, { color: activeColors[0] }]}>Войти</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => router.push("/register")} style={styles.button}>
-                    <Text style={[styles.buttonText, { color: activeColors[0] }]}>Зарегистрироваться</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity onPress={() => router.push("/register")} style={styles.button}>
+                        <Text style={[styles.buttonText, { color: activeColors[0] }]}>Зарегистрироваться</Text>
+                      </TouchableOpacity>
+                    </View>
                 </View>
-
-            </View>
+            </ScrollView>
         </LinearGradient>
   )
 }
@@ -35,6 +35,9 @@ export default function AuthChoiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

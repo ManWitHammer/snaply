@@ -1,20 +1,21 @@
-import { useRouter } from "expo-router";
-import { useEffect, ReactNode, useLayoutEffect } from "react";
-import { StyleSheet, Dimensions, BackHandler, Platform } from "react-native";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { useRouter } from "expo-router"
+import { useEffect, ReactNode, useLayoutEffect } from "react"
+import { StyleSheet, Dimensions, BackHandler, Platform } from "react-native"
+import { GestureDetector, Gesture } from "react-native-gesture-handler"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   runOnJS,
-} from "react-native-reanimated";
-import { useNavigation } from "expo-router";
+} from "react-native-reanimated"
+import { useNavigation } from "expo-router"
 import CustomHeader from "./CustomHeader"
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import InApiError from "./InApiError"
+import { StatusBar } from "expo-status-bar"
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get("window")
 
 interface AccountInfo {
   _id: string
@@ -38,55 +39,56 @@ export default function CustomLeftModal({
   bottomSheetEnable,
   accountInfo
 }: CustomLeftModalProps) {
-  const router = useRouter();
-  const translateX = useSharedValue(width);
-  const navigation = useNavigation();
+  const router = useRouter()
+  const translateX = useSharedValue(width)
+  const navigation = useNavigation()
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
-    });
-  }, [navigation]);
+    })
+  }, [navigation])
 
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => {
-      closeModal();
-      return true;
-    });
+      closeModal()
+      return true
+    })
 
-    translateX.value = withTiming(0, { duration: 300 });
-  }, []);
+    translateX.value = withTiming(0, { duration: 300 })
+  }, [])
 
   const closeModal = () => {
     translateX.value = withTiming(width, { duration: 300 }, () => {
-      runOnJS(router.back)();
-    });
-  };
+      runOnJS(router.back)()
+    })
+  }
 
   const swipeGesture = Gesture.Pan()
     .activeOffsetX(20)
     .failOffsetX(-5)
     .onUpdate((event) => {
       if (event.translationX > 0) {
-        translateX.value = event.translationX;
+        translateX.value = event.translationX
       }
     })
     .onEnd((event) => {
       if (event.translationX > width * 0.4) {
-        runOnJS(closeModal)();
+        runOnJS(closeModal)()
       } else {
-        translateX.value = withSpring(0, { damping: 20, stiffness: 150 });
+        translateX.value = withSpring(0, { damping: 20, stiffness: 150 })
       }
-    });
+    })
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
-  }));
+  }))
 
   return (
     <>
       <GestureDetector gesture={swipeGesture}>
         {bottomSheetEnable ? (
           <Animated.View style={[styles.modal, animatedStyle]}>
+            <StatusBar style='light' backgroundColor='transparent' translucent hidden={false}/>
             <BottomSheetModalProvider>
               { Platform.OS === 'ios' && <InApiError style={{ width: width - 40, marginLeft: 20 }}/> }
               <CustomHeader title={title} back={closeModal} accountInfo={accountInfo} showBack/>
@@ -95,6 +97,7 @@ export default function CustomLeftModal({
           </Animated.View>
         ) : (
           <Animated.View style={[styles.modal, animatedStyle]}>
+            <StatusBar style='light' backgroundColor='transparent' translucent hidden={false}/>
             { Platform.OS === 'ios' && <InApiError style={{ width: width - 40, marginLeft: 20 }}/> }
             <CustomHeader title={title} back={closeModal} accountInfo={accountInfo} showBack/>
             {children}
@@ -102,7 +105,7 @@ export default function CustomLeftModal({
         )}
       </GestureDetector>
     </>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -111,4 +114,4 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     overflow: "hidden",
   },
-});
+})

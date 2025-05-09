@@ -2,41 +2,19 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity }
 import { Stack, useRouter } from "expo-router"
 import CustomHeader from "../../components/CustomHeader"
 import { LinearGradient } from "expo-linear-gradient"
-import { useChatsStore } from "../../state/chatsStore"
+import useChatsStore, { Chat } from "../../state/chatsStore"
 import { useEffect } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { formatDistanceToNow } from 'date-fns'
-import { useAppearanceStore } from "../../state/appStore";
+import useAppearanceStore from "../../state/appStore"
 import { ru } from 'date-fns/locale'
 import { Image } from "expo-image"
-
-interface ChatParticipant {
-  _id: string
-  name: string
-  surname: string
-  avatar: string | null
-}
-
-interface ChatMessage {
-  _id: string
-  sender: ChatParticipant
-  content: string
-  isOwnMessage: boolean
-  timestamp: string
-}
-
-interface Chat {
-  chatId: string
-  isGroup: boolean
-  lastMessage: ChatMessage | null
-  participant: ChatParticipant
-}
 
 export default function ChatScreen() {
   const router = useRouter()
   const { chats, loading, error, fetchChats } = useChatsStore()
   const { getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const activeColors = getGradient()
 
   useEffect(() => {
     fetchChats()
@@ -58,7 +36,7 @@ export default function ChatScreen() {
         <Image 
           source={{ uri: item.participant.avatar }} 
           style={styles.avatar} 
-          placeholder={{ blurhash: item.participant.avatar.split('?')[1] }}
+          placeholder={{ blurhash: new URL(item.participant.avatar).search.slice(1) }}
         />
       ) : (
         <View style={styles.avatarPlaceholder}>
@@ -66,7 +44,6 @@ export default function ChatScreen() {
         </View>
       )}
       
-      {/* Информация о чате */}
       <View style={styles.chatInfo}>
         <Text style={styles.chatName}>
           {item.participant?.name} {item.participant?.surname}
@@ -81,7 +58,6 @@ export default function ChatScreen() {
         )}
       </View>
       
-      {/* Время последнего сообщения */}
       {item.lastMessage && (
         <Text style={styles.timeAgo}>
           {formatChatTime(item.lastMessage.timestamp)}

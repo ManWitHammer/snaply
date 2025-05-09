@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { View, Text, StyleSheet, SectionList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image, Dimensions, TouchableWithoutFeedback } from "react-native"
+import { View, Text, StyleSheet, SectionList, TextInput, TouchableOpacity, KeyboardAvoidingView, Keyboard, Dimensions, TouchableWithoutFeedback } from "react-native"
 import * as Clipboard from "expo-clipboard"
 import ImageView from '@staltz/react-native-image-viewing'
 import * as MediaLibrary from 'expo-media-library'
@@ -7,18 +7,21 @@ import * as FileSystem from 'expo-file-system'
 import CustomLeftModal from "../../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { useChatsStore, ChatMessage, ChatParticipant } from "../../../state/chatsStore"
+import useChatsStore, { ChatMessage, ChatParticipant } from "../../../state/chatsStore"
 import useStore from "../../../state/store"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import * as ImagePicker from 'expo-image-picker'
 import { format, isSameDay, parseISO } from "date-fns"
-import { useAppearanceStore } from "../../../state/appStore"
+import useAppearanceStore from "../../../state/appStore"
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
 import { ru } from 'date-fns/locale'
 import MessageItem from "../../../components/MessageItem"
 import OptionsMenu from "../../../components/OptionsMenu"
 import ShareBottomSheet from '../../../components/ShareBottomSheet'
-import ConfettiCannon from 'react-native-confetti-cannon';
+import socketStore from "../../../state/socketStore"
+import LottieView from 'lottie-react-native'
+import { Image } from 'expo-image'
+import { ChatShimmer } from '../../../components/Shimmers'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -36,11 +39,14 @@ interface ImageDto {
   name: string
 }
 
+// console.error
+
 export default function ChatScreen() {
   const router = useRouter()
   const { id: chatId } = useLocalSearchParams()
   const { fetchMessages, sendMessage, setCurrentChatId, deleteMessage, editMessage } = useChatsStore()
-  const { socket, user } = useStore()
+  const { user, setErrorMessage } = useStore()
+  const { socket } = socketStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [otherParticipant, setOtherParticipant] = useState<ChatParticipant & { status: "online" | "offline", typing: boolean } | undefined>(undefined)
   const [page, setPage] = useState(1)
@@ -55,22 +61,29 @@ export default function ChatScreen() {
   const [editText, setEditText] = useState("")
   const [selectedImage, setSelectedImage] = useState<ImageDto | null>(null)
   const [visibleImageId, setVisibleImageId] = useState<string | null>(null)
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false)
   const { getGradient, getCommentColor, getLastEmoji, confetti } = useAppearanceStore()
   const commentColor = getCommentColor()
   const activeColors = getGradient()
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
   const inputRef = useRef<TextInput>(null)
   const bottomSheetModalRef = useRef<BottomSheetModal>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const isTypingRef = useRef(false)
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
+    
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
   
   const handleInputChange = (text: string) => {
     setInputValue(text)
 
-    if (!isTypingRef.current) {
-      socket?.emit('typing', { chatId, userId: user?.id })
-      isTypingRef.current = true
-    }
+    socket?.emit('typing', { chatId, userId: user?.id })
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
@@ -78,8 +91,7 @@ export default function ChatScreen() {
 
     typingTimeoutRef.current = setTimeout(() => {
       socket?.emit('stopTyping', { chatId, userId: user?.id })
-      isTypingRef.current = false
-    }, 2000)
+    }, 3000)
   }
 
   const loadMessages = async () => {
@@ -97,6 +109,8 @@ export default function ChatScreen() {
       setHasMore(data.hasMore)
       setOtherParticipant(data.otherParticipant ? { ...data.otherParticipant, typing: false } : undefined)
       setPage(prev => prev + 1)
+    } catch(err) {
+      setErrorMessage("Что-то пошло не так при отправке сообщения")
     } finally {
       setLoading(false)
     }
@@ -147,6 +161,8 @@ export default function ChatScreen() {
       console.log(data)
       if (data.chatId === chatId) {
         setMessages(prev => prev.filter(msg => msg._id !== data.messageId))
+        setShowOptions(false)
+        setSelectedMessage(null)
       }
     }
   
@@ -159,20 +175,33 @@ export default function ChatScreen() {
               : msg
           )
         )
+        setShowOptions(false)
+        setSelectedMessage(null)
       }
     }
 
     const handleTyping = (data: { chatId: string, userId: string }) => {
-      console.log(data)
       if (data.chatId === chatId) {
         setOtherParticipant(prev => prev ? { ...prev, typing: true } : prev)
       }
     }
 
     const handleStopTyping = (data: { chatId: string, userId: string }) => {
-      console.log(data)
       if (data.chatId === chatId) {
         setOtherParticipant(prev => prev ? { ...prev, typing: false } : prev)
+      }
+    }
+
+    const handleCheckOnline = (data: { userId: string, status: "online" | "offline" }) => {
+      if (data.userId === otherParticipant?._id) {
+        setOtherParticipant(prev => prev ? { ...prev, status: data.status } : prev)
+      }
+    }
+
+    const handleCheckOffline = (data: { userId: string }) => {
+      console.log(data)
+      if (data.userId === otherParticipant?._id) {
+        setOtherParticipant(prev => prev ? { ...prev, status: "offline" } : prev)
       }
     }
 
@@ -181,12 +210,16 @@ export default function ChatScreen() {
     socket?.on('newMessage', handleNewMessage)
     socket?.on('onTyping', handleTyping)
     socket?.on('onStopTyping', handleStopTyping)
+    socket?.on('friendOnline', handleCheckOnline)
+    socket?.on('friendOffline', handleCheckOffline)
     return () => {
       socket?.off('newMessage', handleNewMessage)
       socket?.off('messageEdited', handleMessageEdited)
       socket?.off('messageDeleted', handleMessageDeleted)
       socket?.off('onTyping', handleTyping)
       socket?.off('onStopTyping', handleStopTyping)
+      socket?.on('friendOnline', handleCheckOnline)
+      socket?.on('friendOffline', handleCheckOffline)
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
       }
@@ -316,14 +349,12 @@ export default function ChatScreen() {
   }
 
   const groupMessagesByDate = (messages: ChatMessage[]) => { 
-    // Сортируем сообщения от новых к старым
     const sorted = [...messages].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     )
   
     const grouped: { title: string, data: ChatMessage[] }[] = []
   
-    // Группируем сообщения по дате
     sorted.forEach(message => {
       const messageDate = parseISO(message.timestamp)
       const formattedDate = format(messageDate, "d MMMM", { locale: ru })
@@ -344,8 +375,14 @@ export default function ChatScreen() {
   }
 
   const handleSend = async () => {
+    if (inputValue.length > 2500) return
     if (editingMessage) {
       saveEdit()
+      return
+    }
+
+    if (!inputValue.trim() && selectedImage) {
+      setErrorMessage("Для отправки сообщения введите хоть что-то")
       return
     }
 
@@ -402,7 +439,7 @@ export default function ChatScreen() {
         ])
       }
     } catch (err) {
-      console.error("Ошибка отправки:", err)
+      setErrorMessage("что то пошло не так:(")
       setMessages(prev => prev.filter(msg => msg._id !== tempId))
     } finally {
       setSending(false)
@@ -522,8 +559,9 @@ export default function ChatScreen() {
             />
             <KeyboardAvoidingView
               style={{ flex: 1 }}
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              behavior={"padding"}
               keyboardVerticalOffset={100}
+              enabled={keyboardVisible}
             >
               <SectionList
                 sections={groupedMessages}
@@ -532,9 +570,15 @@ export default function ChatScreen() {
                 onEndReached={loadMessages}
                 onEndReachedThreshold={0.5}
                 ListEmptyComponent={() => (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', transform: [{ rotate: '180deg' }] }}>
-                    <Text style={{ color: '#fff', fontSize: 16 }}>Нет сообщений, увы</Text>
-                  </View>
+                  !hasMore ? (
+                    <View style={{ alignItems: "center", marginVertical: 8 }}>
+                      <Text style={{ color: "#fff", fontSize: 13 }}>
+                        Сообщений нет
+                      </Text>
+                    </View>
+                  ) : (
+                    <ChatShimmer/>
+                  )
                 )}
                 renderSectionFooter={({ section: { title } }) => (
                   <View style={{ alignItems: "center", marginVertical: 8 }}>
@@ -561,18 +605,21 @@ export default function ChatScreen() {
                 contentContainerStyle={styles.messagesList}
               />
 
-              {/* Меню действий */}
               <OptionsMenu
                 visible={showOptions}
-                options={options}  // передаем массив с правильными иконками
+                options={options}  
                 position={optionsPosition}
                 onClose={() => setShowOptions(false)}
               />
-              {/* Поле ввода с возможностью редактирования */}
+
               <View style={[styles.inputContainer, { backgroundColor: activeColors[0] }]}>
                 {selectedImage && (
                   <View style={styles.imagePreviewContainer}>
-                    <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+                    <Image 
+                      source={{ uri: selectedImage.uri }} 
+                      style={styles.imagePreview} 
+                      placeholder={{ blurhash: new URL(selectedImage.uri).search.slice(1) }}
+                    />
                     <TouchableOpacity 
                       style={[styles.removeImageButton, { backgroundColor: activeColors[1] }]}
                       onPress={() => setSelectedImage(null)}
@@ -587,6 +634,12 @@ export default function ChatScreen() {
                     <TouchableOpacity onPress={() => setEditingMessage(null)}>
                       <Ionicons name="close" size={20} color="#fff" />
                     </TouchableOpacity>
+                  </View>
+                )}
+
+                {inputValue.length > 2500 && (
+                  <View style={[styles.editHeader, { backgroundColor: activeColors[0] }]}>
+                    <Text style={styles.editHeaderText}>Превышен лимит в 2500 символов</Text>
                   </View>
                 )}
 
@@ -625,20 +678,27 @@ export default function ChatScreen() {
               </View>
             </KeyboardAvoidingView>
             {showConfetti && confetti && (
-              <ConfettiCannon
-                count={200}
-                origin={{ x: -10, y: 0 }}
-                fadeOut={true}
-                autoStart={true}
-                explosionSpeed={350}
-                fallSpeed={3000}
-                onAnimationEnd={() => setShowConfetti(false)}
+              <LottieView
+                source={require('../../../../assets/confetti.json')}
+                autoPlay
+                loop={false}
+                onAnimationFinish={() => setShowConfetti(false)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 10,
+                }}
               />
             )}
             <ShareBottomSheet 
               bottomSheetModalRef={bottomSheetModalRef}
               selectedMessage={selectedMessage}
-              otherParticipant={otherParticipant}
+              otherParticipant={selectedMessage?.sender}
             />
           </LinearGradient>
       </TouchableWithoutFeedback>
@@ -647,10 +707,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5'},
   messagesList: {
     padding: 12,
     paddingBottom: 70,

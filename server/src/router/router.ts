@@ -22,11 +22,12 @@ router.post('/friends/reject/:requesterId', UserController.rejectFriendRequest)
 router.delete('/friends/delete/:requesterId', UserController.deleteFriend)
 router.get('/friends', UserController.getFriends);
 router.get('/friend-requests', UserController.getFriendRequests);
-router.get('/blocked-users', UserController.getBlockedUsers);
 router.get('/photos/:id', UserController.getAllPhotos)
 router.post('/user/photos', imageUploads.array('images'), UserController.uploadPhotos)
 router.get('/user/info/privacy', UserController.getUserPrivacy)
 router.patch('/user/info/privacy', UserController.updateUserPrivacy)
+router.get('/user/info/friends/:id', UserController.getUserFriends)
+router.get('/user/info/sharedImages/:id', UserController.getSharedImages)
 //posts
 router.get('/posts', PostController.getPosts)
 router.get('/post/:postId', PostController.getPost)

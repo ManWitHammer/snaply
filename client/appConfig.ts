@@ -1,3 +1,4 @@
-import { Platform } from "react-native"
+export const apiUrl = "https://snaply-production.up.railway.app"
 
-export const apiUrl = Platform.OS == "web" ? "http://localhost:3000" : 'http://192.168.0.54:3000'
+// "https://snaply-production.up.railway.app"
+// "http://192.168.0.54:3000"

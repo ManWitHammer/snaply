@@ -11,83 +11,30 @@ import {
   FlatList,
   ActionSheetIOS
 } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import useStore from '../../../state/store'
+import useStore, { IProfileDto, IUser as IUserDto } from '../../../state/store'
+import { Post } from '../../../state/postsStore'
 import PostItem from "../../../components/PostItem"
-import { usePostsStore } from "../../../state/postsStore"
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withRepeat
-} from "react-native-reanimated";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import usePostsStore from "../../../state/postsStore"
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import NotFound from "../../../../assets/not-found"
 import * as ImagePicker from "expo-image-picker"
 import { ScrollView } from 'react-native-gesture-handler'
-import { useAppearanceStore } from "../../../state/appStore"
+import useAppearanceStore from "../../../state/appStore"
+import socketStore from "../../../state/socketStore"
 import { Image } from "expo-image"
-
-interface IUserDto {
-  id: string
-  nickname: string
-  name: string
-  surname: string
-  avatar: string | null
-}
-
-interface Post {
-  _id: string
-  content: string
-  author: IUser
-  images: string[]
-  likes: string[]
-  commentsCount: number
-  visibility: string
-  commentsEnabled: boolean
-  aiGenerated: boolean
-  createdAt: string
-}
-
-interface IUser {
-  _id: string
-  nickname: string
-  name: string
-  surname: string
-  avatar: string | null
-}
-
-interface IProfileDto {
-  user: {
-      _id: string
-      nickname: string
-      name: string
-      surname: string
-      avatar?: string
-      description: string
-      friends: {
-          _id: string
-          avatar: string | null
-      }[]
-      status: "online" | "offline"
-      photos: string[]
-      friendsCount: number
-      chatId?: string
-      isFriend: boolean
-      hasPendingRequest?: boolean
-      sentRequest?: boolean
-  }
-  posts: Post[]
-}
+import { ProfileShimmer } from "../../../components/Shimmers"
 
 export default function ProfileModal() {
   const router = useRouter()
   const { likePost, deletePost } = usePostsStore()
-  const { setAvatar, getUser, user, sendFriendRequest, deleteFriend, acceptFriendRequest, rejectFriendRequest, socket } = useStore()
-  const { id } = useLocalSearchParams();
+  const { setAvatar, getUser, user, sendFriendRequest, deleteFriend, acceptFriendRequest, rejectFriendRequest, setErrorMessage } = useStore()
+  const { socket } = socketStore()
+  const { id } = useLocalSearchParams()
   const [userData, setUserData] = useState<IProfileDto | null>(null)
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true)
   const [image, setImage] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(1)
@@ -98,7 +45,7 @@ export default function ProfileModal() {
     const { userDto } = data
     if (userData?.user._id === userDto.id) {
       setUserData(prev => {
-        if (!prev) return null;
+        if (!prev) return null
         return {
           ...prev,
           user: {
@@ -106,7 +53,7 @@ export default function ProfileModal() {
             hasPendingRequest: true
           }
         }
-      });
+      })
     }
   }
 
@@ -114,7 +61,7 @@ export default function ProfileModal() {
     const { userDto } = data
     if (userData?.user._id === userDto.id) {
       setUserData(prev => {
-        if (!prev) return null;
+        if (!prev) return null
         return {
           ...prev,
           user: {
@@ -122,22 +69,21 @@ export default function ProfileModal() {
             isFriend: true,
             friendsCount: prev.user.friendsCount + 1,
             friends: [...prev.user.friends, {
-              _id: userDto.id,
+              _id: userDto.id || '',
               avatar: userDto.avatar
             }],
             hasPendingRequest: false,
             sentRequest: false
           }
         }
-      });
-    }
-  }
+      })
+    }  }
 
   const handleFriendRequestRejected = (data: { userDto: IUserDto }) => {
     const { userDto } = data
     if (userData?.user._id === userDto.id) {
       setUserData(prev => {
-        if (!prev) return null;
+        if (!prev) return null
         return {
           ...prev,
           user: {
@@ -146,9 +92,40 @@ export default function ProfileModal() {
             sentRequest: false
           }
         }
-      });
+      })
     }
   }
+
+  const handleCheckOnline = (data: { userId: string, status: "online" | "offline" }) => {
+
+    if (data.userId === id) {
+      setUserData(prev => {
+        if (!prev) return null
+        return {
+          ...prev,
+          user: {
+            ...prev.user,
+            status: data.status
+          }
+        }
+      })
+    }
+  }
+
+    const handleCheckOffline = (data: { userId: string, status: "online" | "offline" }) => {
+      if (data.userId === id) {
+        setUserData(prev => {
+          if (!prev) return null
+          return {
+            ...prev,
+            user: {
+              ...prev.user,
+              status: data.status
+            }
+          }
+        })
+      }
+    }
 
   useEffect(() => {
     if (!socket) return
@@ -156,35 +133,35 @@ export default function ProfileModal() {
     socket.on('newFriendRequest', handleNewFriendRequest)
     socket.on('friendRequestAccepted', handleFriendRequestAccepted)
     socket.on('friendRequestRejected', handleFriendRequestRejected)
+    socket.on('friendOnline', handleCheckOnline)
+    socket.on('friendOffline', handleCheckOffline)
     return () => {
       socket.off('newFriendRequest')
       socket.off('friendRequestAccepted')
       socket.off('friendRequestRejected')
+      socket.off('friendOnline', handleCheckOnline)
+      socket.off('friendOffline', handleCheckOffline)
     }
   }, [socket, userData, id, page])
 
   useEffect(() => {
-    const getUserData = async () => {
-      try {
-        setLoading(true);
-        const res = await getUser(id as string, page);
-        setUserData(res);
-        setLoading(false)
-      } catch (error) {
-        console.error("Ошибка при загрузке данных:", error);
-      } 
-    };
-    getUserData();
+    fetchUserData()
   }, [id])
 
   const fetchUserData = async () => {
     if (id) {
-      setPage(prev => prev + 1)
       try {
-        const res = await getUser(id as string, page);
-        setUserData(res);
+        const res = await getUser(id as string, page)
+        setPage(prev => prev + 1)
+        setUserData(prev => {
+          return {
+            user: res.user,
+            posts: [...(prev?.posts || []), ...res.posts]
+          }
+        })
+        setLoading(false)
       } catch (error) {
-        console.error("Ошибка при загрузке данных:", error);
+        setErrorMessage("что то пошло не так:(")
       }
     }
   }
@@ -231,19 +208,17 @@ export default function ProfileModal() {
     }
   }
 
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null)
 
-  // Snap Points
-  const snapPoints = useMemo(() => ['25%'], []);
+  const snapPoints = useMemo(() => ['25%'], [])
 
-  // Callbacks
   const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
-  }, []);
+    bottomSheetModalRef.current?.present()
+  }, [])
 
   const handleDismissModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.dismiss();
-  }, []);
+    bottomSheetModalRef.current?.dismiss()
+  }, [])
   const handlePublishPress = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -257,15 +232,15 @@ export default function ProfileModal() {
         } else if (buttonIndex == 2) {
           handleUploadPhoto()
         }
-      });
+      })
     } else {
-      handlePresentModalPress();
+      handlePresentModalPress()
     }
-  };
+  }
 
   const handleCloseBottomSheet = () => {
-    handleDismissModalPress();
-  };
+    handleDismissModalPress()
+  }
 
   const handleCreatePost = () => {
     router.push('/create-post')
@@ -303,7 +278,7 @@ export default function ProfileModal() {
 
   const handleAccept = async () => {
     if (!userData) return
-    const success = await acceptFriendRequest(userData.user._id);
+    const success = await acceptFriendRequest(userData.user._id)
     if (success) {
       setUserData(prev => {
         if (!prev) return null
@@ -323,11 +298,11 @@ export default function ProfileModal() {
         }
       })
     }
-  };
+  }
 
   const handleReject = async (selfReject: boolean) => {
     if (!userData) return
-    const success = await rejectFriendRequest(userData.user._id, selfReject);
+    const success = await rejectFriendRequest(userData.user._id, selfReject)
     if (success) {
       setUserData(prev => {
         if (!prev) return null
@@ -373,79 +348,25 @@ export default function ProfileModal() {
         if (success) {
           setImage(result.assets[0].uri)
         } else {
-          alert("Не удалось обновить аватар.")
+          setErrorMessage("Не удалось загрузить аватар")
         }
       } catch (error) {
-        console.error("Ошибка при загрузке аватара:", error)
-        alert("Произошла ошибка при загрузке аватара.")
+        setErrorMessage("Ошибка при загрузке аватара")
       } finally {
         setUploading(false)
       }
     }
   }
 
-  const Shimmer = () => {
-    const backgroundColor = useSharedValue('#fff');
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        backgroundColor: backgroundColor.value,
-      };
-    });
-
-    useEffect(() => {
-      backgroundColor.value = withRepeat(
-        withTiming('#D3D3D3', { duration: 800 }),
-        -1,
-        true 
-      );
-    }, [])
-    
-    return (
-      <ScrollView style={{flex: 1}}>
-        <View style={styles.profileContainer}>
-          <View style={[styles.banner, { backgroundColor: activeColors[1] }]}>
-            <TouchableOpacity onPress={() => router.back()} style={[styles.arrowBack, { top: Platform.OS === 'ios' ? 10 : 30 }]}>
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-            <Animated.View style={[styles.avatarPlaceholder, animatedStyle]} />
-          </View>
-        
-          <View style={[styles.profileInfo, { backgroundColor: activeColors[0] }]}>
-            <Animated.View style={[styles.profileNameSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.profileDescSkeleton, animatedStyle]} />        
-            <Animated.View style={[styles.publishButtonSkeleton, animatedStyle]} />
-          </View>
-        </View>
-        
-        <View style={[styles.mediaContainer, { backgroundColor: activeColors[0] }]}>
-          <View style={styles.mediaTabs}>
-            <Animated.View style={[styles.mediaTabSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaTabSkeleton, animatedStyle]} />
-          </View>
-          <View style={styles.mediaContent}>
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-            <Animated.View style={[styles.mediaContentSkeleton, animatedStyle]} />
-          </View>
-        </View>
-      </ScrollView>
-  )}
-
     return (
       <SafeAreaView style={[styles.wrapper, {backgroundColor: activeColors[1]}]}>
         <SafeAreaView style={{flex: 1}}>
-          {loading ? <Shimmer /> : (
+          <StatusBar hidden/>
+          {loading ? <ProfileShimmer /> : (
             <ScrollView style={{flex: 1}}>
               <View style={styles.profileContainer}>
                 <View style={styles.banner}>
-                  <TouchableOpacity onPress={() => router.back()} style={[styles.arrowBack, { top: Platform.OS === 'ios' ? 10 : 30 }]}>
+                  <TouchableOpacity onPress={() => router.back()} style={[styles.arrowBack, { top: 10 }]}>
                     <Ionicons name="arrow-back" size={24} color="white" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={pickImage} style={styles.avatarPlaceholder}>
@@ -471,7 +392,7 @@ export default function ProfileModal() {
                         <Image 
                           source={{ uri: userData.user.avatar }} 
                           style={[styles.avatarImage, { borderColor: activeColors[0] }]} 
-                          placeholder={{ blurhash: (userData.user.avatar || "").split('?')[1] }}
+                          placeholder={{ blurhash: new URL(userData.user.avatar).search.slice(1)}}
                         />
                         {uploading && (
                           <View style={styles.loaderContainer}>
@@ -586,10 +507,10 @@ export default function ProfileModal() {
                 </View>
 
                 {userData && userData.user.friends.length > 0 ? (
-                  <View style={[styles.friendsContainer, { backgroundColor: activeColors[0] }]}>
+                  <TouchableOpacity onPress={() => router.push(`/friends/${id}`)} style={[styles.friendsContainer, { backgroundColor: activeColors[0] }]}>
                     <View style={styles.friendsLeft}>
-                      <Text style={styles.friendsCount}>{userData?.user.friendsCount}
-                        <Text style={styles.friendsLabel}>{userData?.user.friendsCount == 1 ? "Друг" : userData?.user.friendsCount > 1 && userData?.user.friendsCount < 5 ? "Друга" : "Друзей"}</Text>
+                      <Text style={styles.friendsCount}>{userData.user.friendsCount}
+                        <Text style={styles.friendsLabel}>{userData.user.friendsCount == 1 ? "Друг" : userData?.user.friendsCount > 1 && userData?.user.friendsCount < 5 ? "Друга" : "Друзей"}</Text>
                       </Text>
                     </View>
                     
@@ -600,7 +521,7 @@ export default function ProfileModal() {
                             <Image
                               source={{ uri: friend.avatar }}
                               style={[styles.friendAvatar, { borderColor: activeColors[1] }]}
-                              placeholder={{ blurhash: friend.avatar.split('?')[1] }}
+                              placeholder={{ blurhash: new URL(friend.avatar).search.slice(1) }}
                             />
                           ) : (
                             <Ionicons name="person-circle-outline" size={40} color="#fff" />
@@ -609,7 +530,7 @@ export default function ProfileModal() {
                         
                       ))}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ) : user && id == user.id ? (
                   <View style={[styles.friendsContainer, { backgroundColor: activeColors[0] }]}>
                     <Ionicons name="people-outline" size={40} color="#fff" />
@@ -623,6 +544,35 @@ export default function ProfileModal() {
                 ) : ""}
 
               </View>
+
+              {userData && userData.user.sharedImages.length > 0 && (
+                <View style={[styles.mediaContainer, { backgroundColor: activeColors[0] }]}>
+                  <View style={styles.mediaTabContainer}>
+                    <View style={styles.mediaTab}>
+                      <Ionicons name="image-outline" size={20} color="#fff" />
+                      <Text style={styles.mediaText}>Общие фото из чата</Text>
+                    </View>
+                  </View>
+                  <View style={styles.photosGrid}>
+                    {userData?.user.sharedImages.map((photo) => (
+                      <Image 
+                        source={{ uri: photo }} 
+                        style={styles.photoItem}
+                        key={photo}
+                        placeholder={{ blurhash: photo.split('?')[1] }}
+                      />
+                    ))}
+                  </View>
+                  {userData && userData.user.sharedImages.length == 6 && (
+                    <TouchableOpacity 
+                      style={styles.viewMoreButton}
+                      onPress={() => router.push(`/sharedImages/${id}`)}
+                    >
+                      <Text style={[styles.viewMoreText, { color: activeColors[0] }]}>Посмотреть ещё</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
         
               <View style={[styles.mediaContainer, { backgroundColor: activeColors[0] }]}>
                 <View style={styles.mediaTabContainer}>
@@ -631,7 +581,6 @@ export default function ProfileModal() {
                     <Text style={styles.mediaText}>Фото</Text>
                   </View>
                 </View>
-
                 {userData && userData.user.photos.length > 0 ? (
                   <>
                     <View style={styles.photosGrid}>
@@ -645,7 +594,7 @@ export default function ProfileModal() {
                       ))}
                     </View>
                     
-                    {userData && userData.user.photos.length >= 6 && (
+                    {userData && userData.user.photos.length == 6 && (
                       <TouchableOpacity 
                         style={styles.viewMoreButton}
                         onPress={() => router.push(`/photos/${id}`)}
@@ -807,19 +756,6 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1
   },
-  profileNameSkeleton: {
-    width: "60%",
-    height: 30,
-    borderRadius: 20,
-    marginBottom: 10,
-    marginTop: 20
-  },
-  profileDescSkeleton: {
-    width: "80%",
-    height: 16,
-    borderRadius: 20,
-    marginBottom: 10,
-  },
   friendActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -848,33 +784,10 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 14,
   },
-  publishButtonSkeleton: {
-    width: "60%",
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-  },  
-  mediaTabSkeleton: {
-    width: "26%",
-    height: 35,
-    borderRadius: 15,
-    marginBottom: 5,
-  },
   uploadButtonSkeleton: {
     width: "60%",
     height: 40,
     borderRadius: 20,
-  },
-  mediaContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: "100%",
-    gap: 2
-  },
-  mediaContentSkeleton: {
-    width: (Dimensions.get('screen').width - 33 - 2) / 3,
-    height: 160
   },
   loaderWrapper: {
     flex: 1,

@@ -1,9 +1,10 @@
 import { useState, useRef, useMemo, useCallback } from "react"
-import { View, ScrollView, StyleSheet, Switch, Text, Alert, TouchableOpacity } from "react-native"
+import { View, ScrollView, StyleSheet, Switch, Text, TouchableOpacity } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import { useAppearanceStore } from "../../state/appStore"
+import useAppearanceStore from "../../state/appStore"
 import CustomLeftModal from "../../components/CustomLeftModal"
 import PasswordModal from "../../components/PasswordModal"
+import useStore from "../../state/store"
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import * as LocalAuthentication from 'expo-local-authentication'
 
@@ -12,6 +13,7 @@ export default function ApperanceScreen() {
   const [isEdit, setIsEdit] = useState(false)
   const [isDelete, setIsDelete] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
+  const { setErrorMessage } = useStore()
 
   const activeColors = getGradient()
 
@@ -22,7 +24,7 @@ export default function ApperanceScreen() {
     console.log(isAvailable, supportedTypes, isEnrolled)
        
     if (!isAvailable || supportedTypes.length === 0 || !isEnrolled) {
-      Alert.alert('Биометрическая аутентификация недоступна')
+      setErrorMessage("Биометрическая аутентификация недоступна")
       setBiometricLogin(false)
     } else {
       setBiometricLogin(value)
@@ -76,7 +78,7 @@ export default function ApperanceScreen() {
   const handleSubmitPassword = async (input: string) => {
     setIsEdit(false)
     if (isDelete) {
-      await removePassword()
+      removePassword()
       setIsDelete(false)
     } else {
       await setPassword(input)
@@ -112,43 +114,43 @@ export default function ApperanceScreen() {
             isEditable={isEdit}
             isDeletable={isDelete}
           />
-            <BottomSheetModal
-                      ref={bottomSheetModalRef}
-                      index={0}
-                      snapPoints={snapPoints}
-                      backdropComponent={(props) => (
-                        <BottomSheetBackdrop
-                          {...props}
-                          disappearsOnIndex={-1}
-                          appearsOnIndex={0}
-                        />
-                      )}
-                      backgroundStyle={{ backgroundColor: activeColors[0] }}
-                      handleIndicatorStyle={{ 
-                        backgroundColor: 'white'
-                      }}
-                    >
-                      <BottomSheetView style={styles.sheetContent}>
-                        <Text style={styles.sheetTitle}>Вход в приложение</Text>
-                        <View style={[styles.toggleRow]}>
-                          <Text style={styles.buttonText}>
-                            Вход по отпечатку пальца или по лицу
-                          </Text>
-                          <Switch 
-                            value={biometricLogin} 
-                            onValueChange={handleBiometricLoginToggle} 
-                            trackColor={{ false: 'rgba(255,255,255,0.3)', true: "rgba(255,255,255,0.3)" }}
-                            thumbColor={biometricLogin ? '#fff' : '#f4f3f4'}
-                          />
-                        </View>
-                        <TouchableOpacity onPress={handleChangePassword} style={styles.toggleRow}>
-                          <Text style={styles.buttonText}>Изменить код-пароль</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={handleDisableSecureLogin} style={styles.toggleRow}>
-                          <Text style={styles.buttonText}>Отключить безопасный вход</Text>
-                        </TouchableOpacity>
-                      </BottomSheetView>
-                    </BottomSheetModal>
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            backdropComponent={(props) => (
+              <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+              />
+            )}
+            backgroundStyle={{ backgroundColor: activeColors[0] }}
+            handleIndicatorStyle={{ 
+              backgroundColor: 'white'
+            }}
+          >
+            <BottomSheetView style={styles.sheetContent}>
+              <Text style={styles.sheetTitle}>Вход в приложение</Text>
+              <View style={[styles.toggleRow]}>
+                <Text style={styles.buttonText}>
+                  Вход по отпечатку пальца или по лицу
+                </Text>
+                <Switch 
+                  value={biometricLogin} 
+                  onValueChange={handleBiometricLoginToggle} 
+                  trackColor={{ false: 'rgba(255,255,255,0.3)', true: "rgba(255,255,255,0.3)" }}
+                  thumbColor={biometricLogin ? '#fff' : '#f4f3f4'}
+                />
+              </View>
+              <TouchableOpacity onPress={handleChangePassword} style={styles.toggleRow}>
+                <Text style={styles.buttonText}>Изменить код-пароль</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDisableSecureLogin} style={styles.toggleRow}>
+                <Text style={styles.buttonText}>Отключить безопасный вход</Text>
+              </TouchableOpacity>
+            </BottomSheetView>
+          </BottomSheetModal>
         </LinearGradient>
       </View>
     </CustomLeftModal>

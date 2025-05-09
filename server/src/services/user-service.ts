@@ -18,24 +18,61 @@ class UserService {
     if(!nickname || !password || !name || !surname || !email) {
       throw ApiError.BadRequest('Заполните все поля')
     }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      throw ApiError.BadRequest('Неверный формат электронной почты')
+    }
+
+    if (!/^[a-zA-Z0-9._-]+$/.test(nickname)) {
+      throw ApiError.BadRequest('Никнейм должен содержать только латинские буквы, цифры и символы . _ -')
+    }
+
+    if (nickname.length < 2) {
+      throw ApiError.BadRequest('Никнейм должен состоять из минимум 2 символов')
+    }
+
+    if (nickname.length > 24) {
+      throw ApiError.BadRequest('Никнейм должен состоять из максимум 24 символов')
+    }
+
+    if (password.length < 6) {
+      throw ApiError.BadRequest('Пароль должен состоять из минимум 6 символов')
+    }
+
+    const trimmedName = name.trim()
+    const trimmedSurname = surname.trim()
+
+    if (trimmedName.length < 2 || trimmedSurname.length < 2) {
+      throw ApiError.BadRequest('Имя и фамилия должны быть минимум по 2 символа')
+    }
+
+    if (trimmedName.length > 24 || trimmedSurname.length > 24) {
+      throw ApiError.BadRequest('Имя и фамилия должны быть максимум по 24 символа')
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12)
     const activationLink = uuidv4()
     const foundedUser = await UserModel.findOne({ nickname })
     if (foundedUser) {
       throw ApiError.BadRequest('Такой пользователь уже есть')
     }
-    const user = new UserModel({ nickname, email, name, surname, password: hashedPassword, activationLink })
+    const user = new UserModel({ nickname, email, name: trimmedName, surname: trimmedSurname, password: hashedPassword, activationLink })
     await user.save()
     await mailService.sendActivationMail(email, `${process.env.SERVER_URL}/api/activate/${activationLink}`)
     const userDto = new UserDto(user)
     const tokens = await tokenService.generateTokens({ ...userDto })
     await tokenService.saveToken(userDto.id as string, tokens.refreshToken)
     return { ...tokens, userDto }
-  }
-
-  async login(nickname: string, password: string) {
+  }  async login(nickname: string, password: string) {
     if(!nickname || !password) {
       throw ApiError.BadRequest('Заполните все поля')
+    }
+    if (nickname.length < 2) {
+      throw ApiError.BadRequest('Никнейм должен состоять из минимум 2 символов')
+    }
+
+    if (nickname.length > 32) {
+      throw ApiError.BadRequest('Я даже проверять это не буду')
     }
     const user = await UserModel.findOne({ nickname })
     if (!user) {
@@ -71,7 +108,7 @@ class UserService {
   async activate(activationLink: string) {
     const user = await UserModel.findOne({ activationLink })
     if (!user) {
-        throw ApiError.BadRequest('Некорректная ссылка активации')
+      throw ApiError.BadRequest('Некорректная ссылка активации')
     }
 
     user.isActivated = true
@@ -104,12 +141,11 @@ class UserService {
       const buffer = fs.readFileSync(avatarPath)
       const fileName = avatarPath.split('\\').pop()
       if (!fileName) {
-        throw ApiError.UnauthorizedError()
+        throw ApiError.BadRequest("Не удалось получить картинку")
       }
       const result = await Cassiopeia.upload(buffer, fileName, true)
-      console.log(result)
       if (!result || typeof result !== 'object' || !('uuid' in result)) {
-        throw ApiError.UnauthorizedError()
+        throw ApiError.BadRequest("Не удалось загрузить картинку на сервер")
       }
       user.avatar = `https://cassiopeia-database-195be7295ffe.herokuapp.com/api/v1/files/public/${result.uuid}?${result.blurhash}`
       await user.save()
@@ -279,15 +315,32 @@ class UserService {
       }
     }
     
-    let chatId = null;
-    const chat = await ChatModel.findOne({
-      participants: {
-        $all: [currentUser._id, user._id],
-        $size: 2
-      }
-    }).select('_id').lean();
+    let chatId = null
+    let chat = null
+    let sharedImages: string[] = [];
+    if ((currentUser._id as Types.ObjectId).toString() == (user._id as Types.ObjectId).toString()) {
+      chatId = null;
+      sharedImages = [];
+    } else {
+      chat = await ChatModel.findOne({
+        participants: {
+          $all: [currentUser._id, user._id],
+          $size: 2
+        }
+      }).select('_id messages').lean();
+    }
       
-    chatId = chat?._id || null;
+    if (chat) {
+      chatId = chat._id;
+      sharedImages = chat.messages
+        .filter(message => message.image)
+        .map(message => message.image)
+        .filter((image): image is string => Boolean(image))
+        .slice(-6)
+      if (!sharedImages) {
+        sharedImages = []
+      }
+    }
     
     let postsQuery = PostModel.find({ author: id })
       .sort({ createdAt: -1 })
@@ -333,12 +386,12 @@ class UserService {
     return { 
       user: {
         ...user.toObject(),
-        chatId
+        chatId,
+        sharedImages
       }, 
       posts 
     }
-  }  
-  
+  }    
   async patchUserInfo(authHeader: string, nickname: string, name: string, surname: string, description: string) {
     if (!authHeader) throw ApiError.UnauthorizedError()
     const userData = await tokenService.validateRefreshToken(authHeader)
@@ -347,9 +400,37 @@ class UserService {
     }
     const user = await UserModel.findOne({ email: userData.email })
     if (!user) throw ApiError.BadRequest('Пользователь не найден')
-    if (name) user.name = name
-    if (surname) user.surname = surname
-    if (nickname) user.nickname = nickname
+
+    if(!nickname || !name || !surname) {
+      throw ApiError.BadRequest('Заполните все поля')
+    }
+
+    if (!/^[a-zA-Z0-9._-]+$/.test(nickname)) {
+      throw ApiError.BadRequest('Никнейм должен содержать только латинские буквы, цифры и символы . _ -')
+    }
+
+    if (nickname.length < 2) {
+      throw ApiError.BadRequest('Никнейм должен состоять из минимум 2 символов')
+    }
+
+    if (nickname.length > 24) {
+      throw ApiError.BadRequest('Никнейм должен состоять из максимум 24 символов')
+    }
+
+    const trimmedName = name.trim()
+    const trimmedSurname = surname.trim()
+
+    if (trimmedName.length < 2 || trimmedSurname.length < 2) {
+      throw ApiError.BadRequest('Имя и фамилия должны быть минимум по 2 символа')
+    }
+
+    if (trimmedName.length > 24 || trimmedSurname.length > 24) {
+      throw ApiError.BadRequest('Имя и фамилия должны быть максимум по 24 символа')
+    }
+
+    user.name = trimmedName
+    user.surname = trimmedSurname
+    user.nickname = nickname
     if (description) user.description = description
     await user.save()
     return user
@@ -368,7 +449,8 @@ class UserService {
 
     if (photos.length > 0) {
       await Cassiopeia.updateTokens()
-      for (const photoPath of photos) {
+      for (let i = 0; i < photos.length; i++) {
+        const photoPath = photos[i]
         const buffer = fs.readFileSync(photoPath)
         const fileName = photoPath.split('\\').pop()
         if (!fileName) {
@@ -388,6 +470,7 @@ class UserService {
           user.photos = []
         }
         user.photos.push(photoUrl)
+        await SocketService.notifyPublishImage((user._id as Types.ObjectId).toString(), i+1, photos.length)
       }
 
       await user.save()
@@ -568,32 +651,6 @@ class UserService {
     }
   }
 
-  async getBlockedUsers(authHeader: string, page: number, limit: number) {
-    if (!authHeader) throw ApiError.UnauthorizedError()
-    const userData = await tokenService.validateRefreshToken(authHeader)
-    
-    if (typeof userData !== 'object' || !userData || !('email' in userData)) {
-      throw ApiError.UnauthorizedError()
-    }
-    
-    const user = await UserModel.findOne({ email: userData.email })
-      .select('blockedUsers')
-      .populate({
-        path: 'blockedUsers',
-        select: 'name surname nickname avatar',
-        options: {
-          skip: (page - 1) * limit,
-          limit: limit
-        }
-      })
-
-    if (!user) throw ApiError.BadRequest('Пользователь не найден')
-
-    return {
-      hasMore: user.blockedUsers.length > page * limit,
-      data: user.blockedUsers
-    }
-  }
   async getAllPhotos(authHeader: string, id: string, page: number, limit: number) {
     if (!authHeader) throw ApiError.UnauthorizedError()
     const userData = await tokenService.validateRefreshToken(authHeader)
@@ -691,6 +748,117 @@ class UserService {
 
     return settingsFromDB
   }
-}
+
+  async getUserFriends(authHeader: string, userId: string, page: number, limit: number) {
+    if (!authHeader) throw ApiError.UnauthorizedError()
+    const userData = await tokenService.validateRefreshToken(authHeader)
+
+    if (typeof userData !== 'object' || !userData || !('email' in userData)) {
+      throw ApiError.UnauthorizedError()
+    }
+
+    const userIsYou = await UserModel.findOne({ email: userData.email })
+    if (!userIsYou) throw ApiError.BadRequest('Пользователь не найден')
+    
+    const skip = (page - 1) * limit
+    const userFriends = await UserModel.find({ _id: { $in: userIsYou.friends } })
+      .skip(skip)
+      .limit(limit)
+      .select('name surname nickname avatar friends settings')
+
+    const populatedUsersData = await Promise.all(userFriends.map(async (user) => {
+      if (!user.settings) {
+        return user
+      }
+      const settings = await SettingsModel.findById(user.settings).lean()
+      if (!settings) return user
+
+      switch (settings.avatar) {
+        case 'Все':
+          break
+        case 'Друзья':
+          if (!user.friends.map(f => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
+            user.avatar = null
+          }
+          break
+        case 'Только я':
+          if (userId !== (userIsYou._id as Types.ObjectId).toString()) {
+            user.avatar = null
+          }
+          break
+        default:
+          break
+      }
+
+      switch (settings.friends) {
+        case 'Все':
+          break
+        case 'Друзья':
+          if (!user.friends.map(f => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
+            user.friends = []
+          }
+          break
+        case 'Только я':
+          if ((user._id as Types.ObjectId).toString() !== (userIsYou._id as Types.ObjectId).toString()) {
+            user.friends = []
+          }
+          break
+        default:
+          break
+      }
+
+      return user
+    }))
+
+    return populatedUsersData
+  }
+  async getSharedImages(authHeader: string, userId: string, page: number, limit: number) {
+    if (!authHeader) throw ApiError.UnauthorizedError()
+    const userData = await tokenService.validateRefreshToken(authHeader)
+    if (typeof userData !== 'object' || !userData || !('email' in userData)) {
+      throw ApiError.UnauthorizedError()
+    }
+
+    const user = await UserModel.findOne({ email: userData.email })
+
+    if (!user) throw ApiError.BadRequest('Пользователь не найден')
+
+    let chat = null
+
+    chat = await ChatModel.findOne({
+      participants: {
+        $all: [userId, user._id],
+        $size: 2
+      }
+    }).select('_id messages').lean()
+
+    if (chat && userId.toString() == (user._id as Types.ObjectId).toString()) {
+      return {
+        total: 0,
+        page: page,
+        data: []
+      }
+    } else if (chat) {
+      const sharedImages = chat.messages
+        .filter(message => message.image)
+        .map(message => message.image)
+        .slice((page - 1) * limit, page * limit)
+      
+      return {
+        total: sharedImages.length,
+        page: page,
+        data: sharedImages
+      }
+    } else {
+      return {
+        total: 0,
+        page: page,
+        data: []
+      }
+    }
+
+    
+
+  }}
 
 export default new UserService()

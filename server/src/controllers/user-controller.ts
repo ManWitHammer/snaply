@@ -185,21 +185,6 @@ class UserController {
         }
     }
 
-    async getBlockedUsers(req: Request, res: Response, next: NextFunction) {
-        try {
-            const authHeader = req.headers.authorization as string
-            const { page = 1, limit = 50 } = req.query
-            const blockedUsers = await UserService.getBlockedUsers(
-                authHeader,
-                +page,
-                +limit
-            )
-            res.json(blockedUsers)
-        } catch (err) {
-            next(err)
-        }
-    }
-
 	async getAllPhotos(req: Request, res: Response, next: NextFunction) {
         try {
             const authHeader = req.headers.authorization as string
@@ -248,6 +233,32 @@ class UserController {
             const privacy = await UserService.updateUserPrivacy(authHeader, settings)
             res.json(privacy)
         } catch (err) {
+            next(err)
+        }
+    }
+
+    async getUserFriends(req: Request, res: Response, next: NextFunction) {
+        try {
+            const authHeader = req.headers.authorization as string
+            const { id } = req.params
+            const { page = 1, limit = 50 } = req.query
+
+            const friends = await UserService.getUserFriends(authHeader, id, +page, +limit)
+            res.json(friends)
+        } catch(err) {
+            next(err)
+        }
+    }
+
+    async getSharedImages(req: Request, res: Response, next: NextFunction) {
+        try {
+            const authHeader = req.headers.authorization as string
+            const { id } = req.params
+            const { page = 1, limit = 50 } = req.query
+
+            const friends = await UserService.getSharedImages(authHeader, id, +page, +limit)
+            res.json(friends)
+        } catch(err) {
             next(err)
         }
     }

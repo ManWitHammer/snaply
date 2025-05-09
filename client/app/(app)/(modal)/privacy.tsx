@@ -2,18 +2,18 @@ import { useState, useEffect } from "react"
 import { View, ScrollView, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import useStore from "../../state/store"
-import { useAppearanceStore } from "../../state/appStore"
+import useAppearanceStore from "../../state/appStore"
 import CustomLeftModal from "../../components/CustomLeftModal"
 
-type PrivacyOption = "Все" | "друзья" | "я";
+type PrivacyOption = "Все" | "друзья" | "я"
 
 interface PrivacySetting {
-  title: string;
-  value: PrivacyOption;
+  title: string
+  value: PrivacyOption
 }
 
 export default function PrivacyScreen() {
-  const { fetchUserPrivacy, updatePrivacy } = useStore()
+  const { fetchUserPrivacy, updatePrivacy, setErrorMessage } = useStore()
   const { getGradient } = useAppearanceStore()
 
   const [privacySettings, setPrivacySettings] = useState<Record<string, PrivacySetting>>({
@@ -21,33 +21,33 @@ export default function PrivacyScreen() {
     photos: { title: "Кто видит мои сохранённые фотографии", value: "Все" },
     friends: { title: "Кто видит мой список друзей", value: "Все" },
     posts: { title: "Кто видит все мои посты", value: "Все" }
-  });
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  })
+  const [hasChanges, setHasChanges] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const activeColors = getGradient()
 
   useEffect(() => {
     const loadPrivacySettings = async () => {
       try {
-        setIsLoading(true);
-        const serverPrivacy = await fetchUserPrivacy();
+        setIsLoading(true)
+        const serverPrivacy = await fetchUserPrivacy()
         
         setPrivacySettings({
           avatar: { title: "Кто видит мою фотографию (аватарку)", value: serverPrivacy.avatar },
           photos: { title: "Кто видит мои сохранённые фотографии", value: serverPrivacy.photos },
           friends: { title: "Кто видит мой список друзей", value: serverPrivacy.friends },
           posts: { title: "Кто видит все мои посты", value: serverPrivacy.posts }
-        });
+        })
       } catch (error) {
-        console.error("Ошибка загрузки настроек приватности:", error);
+        setErrorMessage("Ошибка загрузки настроек приватности")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    loadPrivacySettings();
-  }, []);
+    loadPrivacySettings()
+  }, [])
 
   const handlePrivacyChange = (settingKey: string, newValue: PrivacyOption) => {
     setPrivacySettings(prev => ({
@@ -56,40 +56,39 @@ export default function PrivacyScreen() {
         ...prev[settingKey],
         value: newValue
       }
-    }));
-    setHasChanges(true);
-  };
+    }))
+    setHasChanges(true)
+  }
 
   const handleSave = async () => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       const privacyData = {
         avatar: privacySettings.avatar.value,
         photos: privacySettings.photos.value,
         friends: privacySettings.friends.value,
         posts: privacySettings.posts.value
-      };
+      }
       
-      await updatePrivacy(privacyData);
-      setHasChanges(false);
-      // Можно добавить уведомление об успешном сохранении
+      await updatePrivacy(privacyData)
+      setHasChanges(false)
     } catch (error) {
-      console.error("Ошибка сохранения настроек:", error);
+      console.error("Ошибка сохранения настроек:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const PrivacyButton = ({ 
     option, 
     currentValue,
     onPress 
   }: {
-    option: PrivacyOption;
-    currentValue: PrivacyOption;
-    onPress: () => void;
+    option: PrivacyOption
+    currentValue: PrivacyOption
+    onPress: () => void
   }) => {
-    const isActive = option === currentValue;
+    const isActive = option === currentValue
     
     return (
       <TouchableOpacity
@@ -106,8 +105,8 @@ export default function PrivacyScreen() {
           {option}
         </Text>
       </TouchableOpacity>
-    );
-  };
+    )
+  }
 
   if (isLoading) {
     return (
@@ -118,7 +117,7 @@ export default function PrivacyScreen() {
           </LinearGradient>
         </View>
       </CustomLeftModal>
-    );
+    )
   }
 
   return (

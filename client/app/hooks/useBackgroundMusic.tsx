@@ -1,50 +1,22 @@
-import { useEffect, useRef } from "react";
-import { Audio } from "expo-av";
-import { useAppearanceStore } from "../state/appStore";
+import { useEffect } from 'react'
+import { useAudioPlayer } from 'expo-audio'
+import useAppearanceStore from '../state/appStore'
+
+const audioSource = require('../../assets/elevator.mp3')
 
 export default function BackgroundMusicPlayer() {
-  const musicEnabled = useAppearanceStore(state => state.musicEnabled);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const musicEnabled = useAppearanceStore(state => state.musicEnabled)
+  const player = useAudioPlayer(audioSource)
 
   useEffect(() => {
-    let isCancelled = false;
+    player.loop = true
 
-    const playMusic = async () => {
-      if (musicEnabled) {
-        if (soundRef.current) {
-          await soundRef.current.stopAsync();
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
-        }
+    if (musicEnabled) {
+      player.play()
+    } else {
+      player.pause()
+    }
+  }, [musicEnabled])
 
-        const { sound } = await Audio.Sound.createAsync(
-          require("../../assets/elevator.mp3"),
-          { isLooping: true, volume: 0.5 }
-        );
-
-        if (!isCancelled) {
-          soundRef.current = sound;
-          await soundRef.current.playAsync();
-        }
-      } else {
-        if (soundRef.current) {
-          await soundRef.current.stopAsync();
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
-        }
-      }
-    };
-
-    playMusic();
-
-    return () => {
-      isCancelled = true;
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-    };
-  }, [musicEnabled]);
-
-  return null;
+  return null
 }

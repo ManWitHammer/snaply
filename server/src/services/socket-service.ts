@@ -1,66 +1,100 @@
-import { Socket, Server } from 'socket.io';
-import { UserModel } from '../models/user-model';
-import { ChatModel, IMessage } from '../models/chat-model';
+import { Socket, Server } from 'socket.io'
+import { UserModel } from '../models/user-model'
+import { ChatModel, IMessage } from '../models/chat-model'
 import { ApiError } from '../exceptions/api-error'
 import tokenService from './token-service'
-import UserDto from '../dto/user-dto';
+import UserDto from '../dto/user-dto'
 
 class SocketService {
-    private static io: Server | null = null;
+    private static io: Server | null = null
 
     static async verifyToken(socket: Socket): Promise<{userId: string, user: any} | null> {
         try {
-            const authToken = socket.handshake.auth.token;
-            if (!authToken) throw ApiError.UnauthorizedError();
+            const authToken = socket.handshake.auth.token
+            if (!authToken) throw ApiError.UnauthorizedError()
             
-            const userData = await tokenService.validateRefreshToken(authToken);
+            const userData = await tokenService.validateRefreshToken(authToken)
             if (typeof userData !== 'object' || !userData || !('email' in userData)) {
-                throw ApiError.UnauthorizedError();
+                throw ApiError.UnauthorizedError()
             }
             
-            const user = await UserModel.findOne({ email: userData.email });
-            if (!user) throw ApiError.UnauthorizedError();
+            const user = await UserModel.findOne({ email: userData.email })
+            if (!user) throw ApiError.UnauthorizedError()
             
-            return { userId: user._id as string, user };
+            return { userId: user._id as string, user }
         } catch (error) {
-            console.error('Token verification error:', error);
-            socket.disconnect();
-            return null;
+            console.error('Token verification error:', error)
+            socket.disconnect()
+            return null
         }
     }
 
     static setIoInstance(io: Server) {
-        SocketService.io = io;
+        SocketService.io = io
     }
 
     static async onConnection(socket: Socket) {
-        const auth = await this.verifyToken(socket);
-        if (!auth) return;
+        const auth = await this.verifyToken(socket)
+        if (!auth) return
 
-        await UserModel.findByIdAndUpdate(auth.userId, { 
-            status: 'online',
-            lastLogin: new Date(),
-            socketId: socket.id
-        });
+        try {
+            const user = await UserModel.findById(auth.userId).populate('friends')
+            if (!user || !user.friends) return
 
-        console.log(`User ${auth.userId} connected`);
-        socket.data.userId = auth.userId;
+            await UserModel.findByIdAndUpdate(auth.userId, { 
+                status: 'online',
+                lastLogin: new Date(),
+                socketId: socket.id
+            })
+        
+            for (const friend of user.friends) {
+                const socketId = await this.getSocketId(friend._id.toString())
+                if (socketId && this.io) {
+                    this.io.to(socketId).emit('friendOnline', {
+                        userId: auth.userId,
+                        status: 'online'
+                    })
+                }
+            }
+        } catch (error) {
+            console.error('Notify friends offline error:', error)
+        }
+
+        socket.data.userId = auth.userId
     }
 
     static async onDisconnect(socket: Socket) {
-        if (!socket.data.userId) return;
+        const auth = await this.verifyToken(socket)
+        if (!auth) return
         
-        await UserModel.findByIdAndUpdate(socket.data.userId, { 
+        await UserModel.findByIdAndUpdate(auth.userId, { 
             status: 'offline',
             lastLogin: new Date(),
             socketId: null
-        });
-        console.log(`User ${socket.data.userId} disconnected`);
+        })
+
+        try {
+            const user = await UserModel.findById(auth.userId).populate('friends')
+            if (!user || !user.friends) return
+        
+            for (const friend of user.friends) {
+                const socketId = await this.getSocketId(friend._id.toString())
+                if (socketId && this.io) {
+                    this.io.to(socketId).emit('friendOffline', {
+                        userId: auth.userId,
+                        status: 'offline'
+                    })
+                }
+            }
+        } catch (error) {
+            console.error('Notify friends offline error:', error)
+        }
+        console.log(`User ${socket.data.userId} disconnected`)
     }
 
     private static async getSocketId(userId: string): Promise<string | null> {
-        const user = await UserModel.findById(userId, 'socketId');
-        return user?.socketId || null;
+        const user = await UserModel.findById(userId, 'socketId')
+        return user?.socketId || null
     }
 
     static async notifyAccountActivation(userId: string): Promise<void> {
@@ -70,16 +104,16 @@ class SocketService {
         const userDto = new UserDto(user)
 
         try {
-            const socketId = await this.getSocketId(userId);
+            const socketId = await this.getSocketId(userId)
             if (socketId && this.io) {
                 this.io.to(socketId).emit('accountActivated', {
                     userDto,
                     timestamp: new Date(),
                     message: 'Ваш аккаунт успешно активирован'
-                });
+                })
             }
         } catch (error) {
-            console.error('Account activation notification error:', error);
+            console.error('Account activation notification error:', error)
         }
     }
 
@@ -96,10 +130,10 @@ class SocketService {
                     from: senderId,
                     userDto,
                     timestamp: new Date()
-                });
+                })
             }
         } catch (error) {
-            console.error('Notification error:', error);
+            console.error('Notification error:', error)
         }
     }
     
@@ -115,10 +149,10 @@ class SocketService {
                     by: acceptorId,
                     userDto,
                     timestamp: new Date()
-                });
+                })
             }
         } catch (error) {
-            console.error('Notification error:', error);
+            console.error('Notification error:', error)
         }
     }
     
@@ -134,37 +168,37 @@ class SocketService {
                     by: rejectorId,
                     userDto,
                     timestamp: new Date()
-                });
+                })
             }
         } catch (error) {
-            console.error('Notification error:', error);
+            console.error('Notification error:', error)
         }
     }
 
     static async notifyNewMessage(senderId: string, recipientId: string, message: IMessage, chatId: string) {
         try {
-          const recipientSocketId = await this.getSocketId(recipientId);
-          const user = await UserModel.findById(senderId);
-          if (!user) throw ApiError.UnauthorizedError();
+          const recipientSocketId = await this.getSocketId(recipientId)
+          const user = await UserModel.findById(senderId)
+          if (!user) throw ApiError.UnauthorizedError()
       
           const userDto = {
             _id: user._id as string,
             name: user.name,
             surname: user.surname,
             avatar: user.avatar
-          };
+          }
       
           if (recipientSocketId && this.io) {
-            console.log('Sending notification to recipient:', recipientSocketId);
+            console.log('Sending notification to recipient:', recipientSocketId)
             this.io.to(recipientSocketId).emit('newMessage', {
               from: senderId,
               userDto,
               message,
               chatId
-            });
+            })
         }
         } catch (error) {
-          console.error('Notification error:', error);
+          console.error('Notification error:', error)
         }
     }
 
@@ -183,10 +217,10 @@ class SocketService {
                     newMessage,
                     chatId,
                     timestamp: new Date(Date.now()).toISOString()
-                });
+                })
             }
         } catch (error) {
-            console.error('Notification error:', error);
+            console.error('Notification error:', error)
         }
     }
 
@@ -205,10 +239,10 @@ class SocketService {
                     messageId,
                     chatId,
                     timestamp: new Date(Date.now()).toISOString()
-                });
+                })
             }
         } catch (error) {
-            console.error('Notification error:', error);
+            console.error('Notification error:', error)
         }
     }
 
@@ -224,60 +258,74 @@ class SocketService {
                     by: senderId,
                     userDto,
                     timestamp: new Date(Date.now()).toISOString()
-                });
+                })
             }
         } catch(err) {
-            console.error('Notification error:', err);
+            console.error('Notification error:', err)
+        }
+    }
+
+    static async notifyPublishImage(senderId: string, imageIndex: number, count: number) {
+        try {
+            const senderSocketId = await this.getSocketId(senderId)
+            if (senderSocketId && this.io) {
+                this.io.to(senderSocketId).emit('publishImage', {
+                    imageIndex,
+                    count
+                })
+            }
+        } catch (error) {
+            console.error('Notification error:', error)
         }
     }
 
     static async onTyping(socket: Socket, chatId: string) {
-        const auth = await this.verifyToken(socket);
-        if (!auth) return;
+        const auth = await this.verifyToken(socket)
+        if (!auth) return
 
         const chat = await ChatModel.findById(chatId)
-        if (!chat) return;
+        if (!chat) return
 
-        const friendId = chat.participants.find(id => id.toString() !== auth.userId)
-        if (!friendId) return;
+        const friendId = chat.participants.find(id => id.toString() !== auth.userId.toString())
+        if (!friendId) return
 
         try {
-            const socketId = await this.getSocketId(friendId.toString());
+            const socketId = await this.getSocketId(friendId.toString())
             if (socketId && this.io) {
                 this.io.to(socketId).emit('onTyping', {
                     senderId: auth.userId,
                     receiverId: friendId,
                     chatId
-                });
+                })
             }
         } catch (error) {
-            console.error('Account activation notification error:', error);
+            console.error('Account activation notification error:', error)
         }
     }
 
     static async onStopTyping(socket: Socket, chatId: string) {
-        const auth = await this.verifyToken(socket);
-        if (!auth) return;
+        const auth = await this.verifyToken(socket)
+        if (!auth) return
 
         const chat = await ChatModel.findById(chatId)
-        if (!chat) return;
+        if (!chat) return
 
-        const friendId = chat.participants.find(id => id.toString() !== auth.userId)
-        if (!friendId) return;
+        const friendId = chat.participants.find(id => id.toString() !== auth.userId.toString())
+        if (!friendId) return
 
         try {
-            const socketId = await this.getSocketId(friendId.toString());
+            const socketId = await this.getSocketId(friendId.toString())
             if (socketId && this.io) {
                 this.io.to(socketId).emit('onStopTyping', {
                     senderId: auth.userId,
                     receiverId: friendId,
                     chatId
-                });
+                })
             }
         } catch (error) {
-            console.error('Account activation notification error:', error);
+            console.error('Account activation notification error:', error)
         }
     }
 }
 
-export default SocketService;
+export default SocketService

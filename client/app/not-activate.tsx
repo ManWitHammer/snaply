@@ -1,47 +1,48 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import useStore from './state/store';
+import { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useRouter } from 'expo-router'
+import useStore from './state/store'
+import useSocketStore from './state/socketStore'
 
 export default function NotActivateScreen() {
-    const { user, logout, socket, setIsAuth } = useStore();
-    const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
+    const { user, logout, setIsAuth } = useStore()
+    const { socket } = useSocketStore()
+    const [isLoading, setIsLoading] = useState(false)
+    const router = useRouter()
 
     useEffect(() => {
-        const handleActivation = (data: any) => {
-            console.log('Account activated received:', data);
+        const handleActivation = () => {
             router.replace('/')
-        };
+        }
 
-        socket?.on('accountActivated', handleActivation);
+        socket?.on('accountActivated', handleActivation)
 
         return () => {
-            socket?.off('accountActivated', handleActivation);
-        };
+            socket?.off('accountActivated', handleActivation)
+        }
     }, [socket])
 
     const openMailClient = () => {
         if (user?.email) {
-            Linking.openURL(`mailto:${user.email}`);
+            Linking.openURL(`mailto:${user.email}`)
         }
-    };
+    }
 
     const handleLogout = async () => {
         try {
-            setIsLoading(true);
-            const res = await logout();
+            setIsLoading(true)
+            const res = await logout()
             if (res) {
-                router.replace('/(auth)');
-                setIsAuth(false);
+                router.replace('/(auth)')
+                setIsAuth(false)
             }
         } catch (err) {
-            console.log(err);
+            console.log(err)
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     return (
         <LinearGradient colors={['#445b73', '#749bb8']} style={styles.container}>
@@ -64,7 +65,7 @@ export default function NotActivateScreen() {
                 </TouchableOpacity>
             </View>
         </LinearGradient>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
@@ -88,4 +89,4 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     buttonText: { fontSize: 16, color: '#445b73', textAlign: 'center' },
-});
+})

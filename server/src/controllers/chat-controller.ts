@@ -28,7 +28,7 @@ class ChatController {
             const authHeader = req.headers.authorization as string
             const { chatId } = req.params
             const image = req.file ? req.file.path : ""
-            const { message, replyTo, forwardedFromUser, forwardedFromPost } = req.body
+            const { message, replyTo, forwardedFromUser, forwardedFromPost, imageFromMessage } = req.body
     
             const chats = await ChatService.sendMessage(
                 authHeader,
@@ -37,7 +37,8 @@ class ChatController {
                 image,
                 replyTo,
                 forwardedFromUser,
-                forwardedFromPost
+                forwardedFromPost,
+                imageFromMessage
             )
     
             if (image) deleteUploadedFiles(req)

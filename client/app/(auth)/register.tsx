@@ -1,5 +1,5 @@
 import { useRouter, Link } from "expo-router"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -9,20 +9,33 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  Keyboard
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import CustomInput from "../components/CustomInput"
 import useStore from "../state/store"
-import { useAppearanceStore } from "../state/appStore"
+import useAppearanceStore from "../state/appStore"
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 export default function RegisterScreen() {
   const router = useRouter()
   const { user, errors, setField, validateField, registration } = useStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-    const { getGradient } = useAppearanceStore()
-    const activeColors = getGradient()
+  const { getGradient } = useAppearanceStore()
+  const activeColors = getGradient()
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
+  
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
 
   const handleRegistration = async() => {
     setIsLoading(true)
@@ -42,23 +55,25 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, width: "100%" }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+      enabled={keyboardVisible}
     >
       <LinearGradient colors={activeColors} style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>Регистрация</Text>
-          <View style={{ flex: 1, width: "90%", alignItems: "center" }}>
+          <View style={{ flex: 1, width: "90%"}}>
             <View style={styles.row}>
               <CustomInput
                 icon="person-outline"
                 value={user && user.name ? user.name : ""}
                 placeholder="Имя"
-                error={errors.name}
                 onChangeText={(text) => {
                   setField("name", text)
-                  validateField("name", text)
+                  validateField("nameAndSurname", text)
                 }}
                 halfInput
               />
@@ -66,14 +81,26 @@ export default function RegisterScreen() {
                 icon="person-outline"
                 value={user && user.surname ? user.surname : ""}
                 placeholder="Фамилия"
-                error={errors.surname}
                 onChangeText={(text) => {
                   setField("surname", text)
-                  validateField("surname", text)
+                  validateField("nameAndSurname", text)
                 }}
                 halfInput
               />
             </View>
+
+            <View style={{ alignItems: "flex-start", width: "100%", marginBottom: 6 }}>
+              {errors.nameAndSurname && (
+                <Animated.Text 
+                  entering={FadeInDown} 
+                  exiting={FadeOutDown}  
+                  style={styles.error}
+                >
+                  {errors.nameAndSurname}
+                </Animated.Text>
+              )}
+            </View>
+            
             <CustomInput
               icon="person-outline"
               value={user && user.nickname ? user.nickname : ""}
@@ -117,7 +144,7 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
 
-        <Text style={styles.linkText}>Есть аккаунт? <Link href="/login" style={styles.link}>Авторизоваться</Link></Text>
+          <Text style={styles.linkText}>Есть аккаунт? <Link href="/login" style={styles.link} replace>Авторизоваться</Link></Text>
         </ScrollView>
       </LinearGradient>
     </KeyboardAvoidingView>
@@ -132,7 +159,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scrollContainer: {
-    padding: 20,
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -145,16 +171,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   row: {
-    width: Dimensions.get("window").width * 0.9 - 35,
+    width: Dimensions.get("window").width * 0.9,
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 10,
   },
   button: {
     padding: 15,
     borderRadius: 25,
     backgroundColor: 'white',
-    width: Dimensions.get("screen").width * 0.9 - 40,
+    width: Dimensions.get("screen").width * 0.9,
     alignItems: "center",
   },
   buttonText: {
@@ -165,10 +190,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
     color: "#fff",
+    paddingBottom: 30,
   },
   link: {
     color: "#ffcccb",
     fontWeight: "bold",
     textDecorationLine: "underline",
+  },
+  error: {
+    color: 'red',
+    textAlign: 'left'
   }
 })

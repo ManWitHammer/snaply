@@ -3,7 +3,7 @@ import { Server as HttpServer } from 'http';
 import SocketService from '../services/socket-service';
 import 'dotenv/config';
 
-const CLIENT_URL = process.env.CLIENT_URL || '';
+const CLIENT_URL = process.env.CLIENT_URL || '*';
 
 class SocketController {
     private io: Server | null = null;

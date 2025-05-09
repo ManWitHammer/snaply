@@ -1,14 +1,14 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActionSheetIOS, Modal, Switch, ActivityIndicator } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActionSheetIOS, Modal, Switch, ActivityIndicator, KeyboardAvoidingView } from "react-native"
 import CustomLeftModal from "../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
 import * as ImagePicker from 'expo-image-picker'
 import { useState, useRef, useMemo, useCallback } from "react"
-import Ionicons from "react-native-vector-icons/Ionicons"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import useStore from '../../state/store'
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import { useRouter } from "expo-router"
 import FormattedText from "../../components/FormattedText"
-import { useAppearanceStore } from "../../state/appStore";
+import useAppearanceStore from "../../state/appStore"
 import { Image } from "expo-image"
 
 export default function CreatePost() {
@@ -24,22 +24,22 @@ export default function CreatePost() {
     const [isLoading, setIsLoading] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
     const { getGradient } = useAppearanceStore()
-    const activeColors = getGradient();
+    const activeColors = getGradient()
 
-    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     
-    const snapPoints = useMemo(() => ['33%'], []);
+    const snapPoints = useMemo(() => ['33%'], [])
     
     const handlePresentModalPress = useCallback(() => {
-        bottomSheetModalRef.current?.present();
+        bottomSheetModalRef.current?.present()
     }, [])
     
     const handleDismissModalPress = useCallback(() => {
-        bottomSheetModalRef.current?.dismiss();
+        bottomSheetModalRef.current?.dismiss()
     }, [])
 
     const handlePublishPress = () => {
-        handlePresentModalPress();
+        handlePresentModalPress()
     }
 
     const pickImage = async () => {
@@ -80,15 +80,15 @@ export default function CreatePost() {
                 },
                 (buttonIndex) => {
                     if (buttonIndex > 0) {
-                        onSelect(options[buttonIndex - 1]);
+                        onSelect(options[buttonIndex - 1])
                     }
                 }
-            );
+            )
         } else {
-            setCurrentOptions({ options, onSelect });
-            setModalVisible(true);
+            setCurrentOptions({ options, onSelect })
+            setModalVisible(true)
         }
-    };
+    }
 
     const handleSubmit = async () => {
         setIsLoading(true)
@@ -102,7 +102,7 @@ export default function CreatePost() {
                 visibility,
                 commentsEnabled,
                 aiGenerated
-            }));
+            }))
             images.forEach((image, index) => {
                 formData.append('images', {
                     uri: image.uri,
@@ -130,164 +130,173 @@ export default function CreatePost() {
                         <Text style={styles.loaderText}>Публикация поста...</Text>
                     </View>
                 )}
-                <ScrollView 
-                    style={styles.container} 
-                    contentContainerStyle={{flexGrow: 1}}
-                    keyboardShouldPersistTaps="handled"
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={"padding"}
+                    keyboardVerticalOffset={100}
                 >
-                    {images.length > 0 && (
-                        <ScrollView horizontal style={styles.imageContainer}>
-                            {images.map((imageUri, index) => (
-                                <View key={index} style={styles.imageWrapper}>
-                                <Image source={{ uri: imageUri.uri }} style={styles.image} />
-                                <TouchableOpacity 
-                                    style={styles.deleteButton}
-                                    onPress={() => setImages(images.filter((_, i) => i !== index))}
-                                >
-                                    <Ionicons name="trash" size={16} color="white" />
-                                </TouchableOpacity>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    )}
-
-                    {/* Блок с текстовым полем или предпросмотром */}
-                    {showPreview ? (
-                        <View style={styles.previewContainer}>
-                            <FormattedText text={text.trim().replace(/\n{2,}/g, '\n\n') || ""} color="#fff" />
-                        </View>
-                    ) : (
-                        <View style={styles.textInputContainer}>
-                            <TextInput
-                                style={styles.textArea}
-                                multiline
-                                placeholderTextColor="rgba(255,255,255,0.7)"
-                                placeholder="Введите текст поста..."
-                                value={text}
-                                onChangeText={setText}
-                            />
-                        </View>
-                    )}
-
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-                            <Ionicons name="image" size={24} color={activeColors[0]} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                            style={styles.previewButton} 
-                            onPress={() => setShowPreview(!showPreview)}
-                        >
-                            <Ionicons 
-                                name={showPreview ? "create-outline" : "eye-outline"} 
-                                size={24} 
-                                color={activeColors[0]}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.imageButton} onPress={handlePublishPress}>
-                            <Ionicons name="options" size={24} color={activeColors[0]} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                            style={styles.submitButton} 
-                            onPress={handleSubmit}
-                            disabled={isLoading}
-                        >
-                            <Text style={[styles.buttonText, {color: activeColors[0]}]}>Опубликовать</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <BottomSheetModal
-                        ref={bottomSheetModalRef}
-                        index={0}
-                        snapPoints={snapPoints}
-                        backdropComponent={(props) => (
-                            <BottomSheetBackdrop
-                                {...props}
-                                disappearsOnIndex={-1}
-                                appearsOnIndex={0}
-                            />
+                    <ScrollView 
+                        style={styles.container} 
+                        contentContainerStyle={{flexGrow: 1}}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {text.length > 1200 && (
+                            <Text style={styles.warn}>Превышен лимит в 1200 символов</Text>
                         )}
-                        backgroundStyle={{ backgroundColor: activeColors[0] }}
-                        handleIndicatorStyle={{ 
-                            backgroundColor: 'white'
-                        }}
-                    >
-                        <BottomSheetView style={styles.bottomSheetContent}>
-                            <View style={styles.header}>
-                                <Text style={styles.headerTitle}>Параметры</Text>
-                                <TouchableOpacity onPress={handleDismissModalPress}>
-                                    <Ionicons name="close" size={24} color="white" />
-                                </TouchableOpacity>
-                            </View>
-                            
-                            <View style={styles.bottomSheetItem}>
-                                <Ionicons name="eye" size={24} color="white" />
-                                <Text style={styles.bottomSheetText}>Кто увидит сообщение</Text>
-                                <TouchableOpacity 
-                                    style={styles.optionButton}
-                                    onPress={() => showOptions(['Все', 'Друзья', 'Только я'], setVisibility)}
-                                >
-                                    <Text style={styles.optionText}>{visibility}</Text>
-                                    <Ionicons name="chevron-down" size={16} color="white" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.bottomSheetItem}>
-                                <Ionicons name="chatbubble-outline" size={24} color="white" />
-                                <Text style={styles.bottomSheetText}>Комментарии к посту</Text>
-                                <Switch
-                                    value={commentsEnabled}
-                                    onValueChange={setCommentsEnabled}
-                                    trackColor={{ false: 'rgba(255,255,255,0.3)', true: activeColors[1] }}
-                                    thumbColor={commentsEnabled ? '#fff' : '#f4f3f4'}
-                                />
-                            </View>
-                            <View style={styles.bottomSheetItem}>
-                                <Ionicons name="color-palette-outline" size={24} color="white" />
-                                <Text style={styles.bottomSheetText}>Отметка "Generated By AI"</Text>
-                                <Switch
-                                    value={aiGenerated}
-                                    onValueChange={setAiGenerated}
-                                    trackColor={{ false: 'rgba(255,255,255,0.3)', true: activeColors[1] }}
-                                    thumbColor={aiGenerated ? '#fff' : '#f4f3f4'}
-                                />
-                            </View>
-                        </BottomSheetView>                    
-                    </BottomSheetModal>
-
-                    <Modal
-                        animationType="fade"
-                        transparent
-                        visible={modalVisible}
-                        onRequestClose={() => setModalVisible(false)}
-                    >
-                        <View style={styles.modalContainer}>
-                            <View style={[styles.modalContent, { backgroundColor: activeColors[0] }]}>
-                                <Text style={styles.modalTitle}>Выберите опцию</Text>
-                                {currentOptions.options.map((option, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={styles.modalOption}
-                                        onPress={() => {
-                                            currentOptions.onSelect(option);
-                                            setModalVisible(false);
-                                        }}
+                        
+                        {images.length > 0 && (
+                            <ScrollView horizontal style={styles.imageContainer}>
+                                {images.map((imageUri, index) => (
+                                    <View key={index} style={styles.imageWrapper}>
+                                    <Image source={{ uri: imageUri.uri }} style={styles.image} />
+                                    <TouchableOpacity 
+                                        style={styles.deleteButton}
+                                        onPress={() => setImages(images.filter((_, i) => i !== index))}
                                     >
-                                        <Text style={styles.optionText}>{option}</Text>
+                                        <Ionicons name="trash" size={16} color="white" />
                                     </TouchableOpacity>
+                                    </View>
                                 ))}
-                                <TouchableOpacity
-                                    style={[styles.modalOption]}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text style={styles.optionText}>Отмена</Text>
-                                </TouchableOpacity>
+                            </ScrollView>
+                        )}
+
+                        {showPreview ? (
+                            <View style={styles.previewContainer}>
+                                <FormattedText text={text.trim().replace(/\n{2,}/g, '\n\n') || ""} color="#fff" />
                             </View>
+                        ) : (
+                            <View style={styles.textInputContainer}>
+                                <TextInput
+                                    style={styles.textArea}
+                                    multiline
+                                    placeholderTextColor="rgba(255,255,255,0.7)"
+                                    placeholder="Введите текст поста..."
+                                    value={text}
+                                    onChangeText={setText}
+                                />
+                            </View>
+                        )}
+
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                                <Ionicons name="image" size={24} color={activeColors[0]} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={styles.previewButton} 
+                                onPress={() => setShowPreview(!showPreview)}
+                            >
+                                <Ionicons 
+                                    name={showPreview ? "create-outline" : "eye-outline"} 
+                                    size={24} 
+                                    color={activeColors[0]}
+                                />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.imageButton} onPress={handlePublishPress}>
+                                <Ionicons name="options" size={24} color={activeColors[0]} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={styles.submitButton} 
+                                onPress={handleSubmit}
+                                disabled={isLoading}
+                            >
+                                <Text style={[styles.buttonText, {color: activeColors[0]}]}>Опубликовать</Text>
+                            </TouchableOpacity>
                         </View>
-                    </Modal>
-                </ScrollView>          
+
+                        <BottomSheetModal
+                            ref={bottomSheetModalRef}
+                            index={0}
+                            snapPoints={snapPoints}
+                            backdropComponent={(props) => (
+                                <BottomSheetBackdrop
+                                    {...props}
+                                    disappearsOnIndex={-1}
+                                    appearsOnIndex={0}
+                                />
+                            )}
+                            backgroundStyle={{ backgroundColor: activeColors[0] }}
+                            handleIndicatorStyle={{ 
+                                backgroundColor: 'white'
+                            }}
+                        >
+                            <BottomSheetView style={styles.bottomSheetContent}>
+                                <View style={styles.header}>
+                                    <Text style={styles.headerTitle}>Параметры</Text>
+                                    <TouchableOpacity onPress={handleDismissModalPress}>
+                                        <Ionicons name="close" size={24} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                                
+                                <View style={styles.bottomSheetItem}>
+                                    <Ionicons name="eye" size={24} color="white" />
+                                    <Text style={styles.bottomSheetText}>Кто увидит сообщение</Text>
+                                    <TouchableOpacity 
+                                        style={styles.optionButton}
+                                        onPress={() => showOptions(['Все', 'Друзья', 'Только я'], setVisibility)}
+                                    >
+                                        <Text style={styles.optionText}>{visibility}</Text>
+                                        <Ionicons name="chevron-down" size={16} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.bottomSheetItem}>
+                                    <Ionicons name="chatbubble-outline" size={24} color="white" />
+                                    <Text style={styles.bottomSheetText}>Комментарии к посту</Text>
+                                    <Switch
+                                        value={commentsEnabled}
+                                        onValueChange={setCommentsEnabled}
+                                        trackColor={{ false: 'rgba(255,255,255,0.3)', true: activeColors[1] }}
+                                        thumbColor={commentsEnabled ? '#fff' : '#f4f3f4'}
+                                    />
+                                </View>
+                                <View style={styles.bottomSheetItem}>
+                                    <Ionicons name="color-palette-outline" size={24} color="white" />
+                                    <Text style={styles.bottomSheetText}>Отметка "Generated By AI"</Text>
+                                    <Switch
+                                        value={aiGenerated}
+                                        onValueChange={setAiGenerated}
+                                        trackColor={{ false: 'rgba(255,255,255,0.3)', true: activeColors[1] }}
+                                        thumbColor={aiGenerated ? '#fff' : '#f4f3f4'}
+                                    />
+                                </View>
+                            </BottomSheetView>                    
+                        </BottomSheetModal>
+
+                        <Modal
+                            animationType="fade"
+                            transparent
+                            visible={modalVisible}
+                            onRequestClose={() => setModalVisible(false)}
+                        >
+                            <View style={styles.modalContainer}>
+                                <View style={[styles.modalContent, { backgroundColor: activeColors[0] }]}>
+                                    <Text style={styles.modalTitle}>Выберите опцию</Text>
+                                    {currentOptions.options.map((option, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={styles.modalOption}
+                                            onPress={() => {
+                                                currentOptions.onSelect(option)
+                                                setModalVisible(false)
+                                            }}
+                                        >
+                                            <Text style={styles.optionText}>{option}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                    <TouchableOpacity
+                                        style={[styles.modalOption]}
+                                        onPress={() => setModalVisible(false)}
+                                    >
+                                        <Text style={styles.optionText}>Отмена</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </Modal>
+                    </ScrollView>  
+                </KeyboardAvoidingView>        
             </LinearGradient>
         </CustomLeftModal>
     )
@@ -470,5 +479,10 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)'
+    },
+    warn: {
+        color: "white",
+        fontSize: 22,
+        textAlign: "center"
     }
 })

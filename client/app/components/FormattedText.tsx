@@ -20,7 +20,6 @@ const FormattedText = ({ text, color = '#000', style, isPressable = false, numbe
     const parts: TextPart[] = []
     let remaining = input
 
-    // Регулярные выражения для разных типов форматирования
     const patterns: { regex: RegExp; type: TextPart['type'] }[] = [
       { regex: /(~.)/g, type: 'escaped' },
       { regex: /(^|\s)(#[a-zA-Zа-яА-Я0-9_]+)/g, type: 'hashtag' },
@@ -29,7 +28,6 @@ const FormattedText = ({ text, color = '#000', style, isPressable = false, numbe
       { regex: /__(.*?)__/g, type: 'underline' },
       { regex: /^#\s(.*$)/gm, type: 'header' },
       { regex: /\[([^\]]+)\]\(([^)]+)\)/g, type: 'link' },
-      // Новое: автоопределение URL (http, https, www)
       { 
         regex: /(https?:\/\/[^\s]+|www\.[^\s]+)/g, 
         type: 'url' 
@@ -47,7 +45,6 @@ const FormattedText = ({ text, color = '#000', style, isPressable = false, numbe
         prefixLength?: number
       } | null = null
 
-      // Ищем ближайшее совпадение среди всех паттернов
       for (const { regex, type } of patterns) {
         regex.lastIndex = 0
         const match = regex.exec(remaining)
@@ -57,7 +54,7 @@ const FormattedText = ({ text, color = '#000', style, isPressable = false, numbe
           let url = ''
           
           if (type === 'escaped') {
-            matchedText = match[0][1] // Берем только символ после тильды
+            matchedText = match[0][1]
           } else if (type === 'hashtag') {
             matchedText = match[2]
           } else if (type === 'link') {
@@ -125,18 +122,14 @@ const FormattedText = ({ text, color = '#000', style, isPressable = false, numbe
 
   const handleLinkPress = (url: string) => {
     try {
-      // Проверяем, является ли ссылка относительной (начинается с /)
       if (url.startsWith('/') || url.startsWith('#')) {
-        // Можно обработать внутренние ссылки здесь
-        console.log('Internal link:', url)
       } else {
-        // Открываем внешние ссылки
-        Linking.openURL(url).catch(err => 
-          console.error('Failed to open URL:', err)
-        )
+        Linking.openURL(url).catch(() => {
+          return
+        })
       }
     } catch (error) {
-      console.error('Error handling link:', error)
+      return
     }
   }
 

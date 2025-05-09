@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react"
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Text } from "react-native"
+import { useState, useEffect, useRef } from "react"
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Text, Keyboard } from "react-native"
 import CommentsSheet from "../../../components/CustomCommentSheet"
 import PostItem from "../../../components/PostItem"
 import { LinearGradient } from "expo-linear-gradient"
 import CustomModal from "../../../components/CustomLeftModal"
 import useStore from "../../../state/store"
 import { useLocalSearchParams } from "expo-router"
-import { usePostsStore, Post, Comment } from "../../../state/postsStore"
-import { useAppearanceStore } from "../../../state/appStore"
+import usePostsStore, { Post, Comment } from "../../../state/postsStore"
+import useAppearanceStore from "../../../state/appStore"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import LottieView from 'lottie-react-native'
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams()
@@ -16,12 +17,25 @@ export default function PostScreen() {
   const { likePost, deletePost, fetchPost, addComment, deleteComment, editComment } = usePostsStore()
   const [text, setText] = useState("")
   const [editingComment, setEditingComment] = useState<Comment | null>(null)
-  const { getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const { getGradient, confetti, getLastEmoji } = useAppearanceStore()
+  const activeColors = getGradient()
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const inputRef = useRef<TextInput>(null)
   const [postData, setPostData] = useState<{
     post: Post
     comments: Comment[]
   } | null>(null)
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
+      
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
 
   useEffect(() => {
     const loadPost = async () => {
@@ -32,6 +46,12 @@ export default function PostScreen() {
     }
     loadPost()
   }, [id])
+
+  useEffect(() => {
+      if (editingComment) {
+        inputRef.current?.focus()
+      }
+    }, [editingComment])
 
   const handleDeleteComment = async (commentId: string) => {
     if (!user?.id) return
@@ -73,11 +93,11 @@ export default function PostScreen() {
   
   const handleSubmitComment = async () => {
     if (!user?.id) return;
-    const trimmedText = text.trim();
-    if (!trimmedText) return;
+    const trimmedText = text.trim() + getLastEmoji()
+    if (!trimmedText) return
+    if (trimmedText.length > 400) return
   
     if (editingComment) {
-      // редактируем существующий комментарий
       const updated = await editComment(id as string, editingComment._id, trimmedText);
       if (updated) {
         setPostData(state => {
@@ -92,7 +112,9 @@ export default function PostScreen() {
         setEditingComment(null);
       }
     } else {
-      // добавляем новый комментарий
+      if (confetti && trimmedText.toLowerCase().includes("конфетти")) {
+        setShowConfetti(true)
+      }
       const data = await addComment(id as string, trimmedText);
       setPostData(state => {
         if (!state) return state;
@@ -123,6 +145,7 @@ export default function PostScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : "height"}
           style={{ flex: 1 }}
           keyboardVerticalOffset={100}
+          enabled={keyboardVisible}
         >
           <ScrollView 
             contentContainerStyle={styles.container}
@@ -140,7 +163,6 @@ export default function PostScreen() {
             {postData.post.commentsEnabled && (
               <View style={styles.commentsContainer}>
                 <CommentsSheet 
-                  postId={postData.post._id}
                   comments={postData.comments}
                   onDeleteComment={handleDeleteComment}
                   onEditComment={(comment) => {
@@ -154,6 +176,13 @@ export default function PostScreen() {
 
           {postData.post.commentsEnabled && (
             <View style={[styles.inputContainer, { backgroundColor: activeColors[0] }]}>
+              {text.length > 400 && (
+                <View style={[styles.editHeader, { backgroundColor: activeColors[0] }]}>
+                  <Text style={styles.editHeaderText}>
+                    Превышен лимит в 400 символов
+                  </Text>
+                </View>
+              )}
               {editingComment && (
                 <View style={[styles.editHeader, { backgroundColor: activeColors[0] }]}>
                   <Text style={styles.editHeaderText}>
@@ -169,11 +198,13 @@ export default function PostScreen() {
               )}
               <View style={[styles.inputRow]}>
                 <TextInput
+                  ref={inputRef}
                   style={styles.commentInput}
                   value={text}
                   onChangeText={setText}
                   placeholder="Написать комментарий..."
                   placeholderTextColor="#fff"
+                  onSubmitEditing={handleSubmitComment}
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSubmitComment}>
                   <Ionicons name="send" size={24} color={activeColors[0]} />
@@ -182,6 +213,24 @@ export default function PostScreen() {
             </View>
           )}
         </KeyboardAvoidingView>
+        {confetti && showConfetti && (
+          <LottieView
+            source={require('../../../../assets/confetti.json')}
+            autoPlay
+            loop={false}
+            onAnimationFinish={() => setShowConfetti(false)}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+            }}
+          />
+        )}
       </LinearGradient>
     </CustomModal>
   )

@@ -1,21 +1,21 @@
 import { Stack } from 'expo-router'
 import * as NavigationBar from "expo-navigation-bar"
 import { useEffect } from "react"
-import { Dimensions, Platform } from 'react-native'
+import { Dimensions } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import InApiError from "../components/InApiError"
-import { StatusBar } from 'expo-status-bar';
-import { useAppearanceStore } from '../state/appStore'
+import { StatusBar } from 'expo-status-bar'
+import useAppearanceStore from '../state/appStore'
 import BackgroundMusicPlayer from '../hooks/useBackgroundMusic'
 
 export default function RootLayout() {
   const { getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const activeColors = getGradient()
   useEffect(() => {
-    NavigationBar.setBackgroundColorAsync(activeColors[0]);
-    NavigationBar.setButtonStyleAsync("light");
-  }, []);
+    NavigationBar.setBackgroundColorAsync(activeColors[0])
+    NavigationBar.setButtonStyleAsync("light")
+  }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: activeColors[0] }}>
@@ -143,8 +143,28 @@ export default function RootLayout() {
               animation: 'fade',
             }} 
           />
+          <Stack.Screen 
+            name="(modal)/friends/[id]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
+          <Stack.Screen 
+            name="(modal)/sharedImages/[id]" 
+            options={{ 
+              presentation: 'transparentModal',
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              animation: 'fade',
+            }} 
+          />
         </Stack>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
-  );
+  )
 }

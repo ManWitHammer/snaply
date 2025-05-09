@@ -16,6 +16,7 @@ import OptionsMenu from './OptionsMenu'
 import ShareBottomSheet from './ShareBottomSheet'
 import { Post } from '../state/postsStore'
 import NotFound from 'assets/not-found'
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated'
 
 interface Option {
     label: string;
@@ -85,7 +86,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         setIsSaving(true)
         
         try {
-        // Запрашиваем разрешение
             const { status } = await MediaLibrary.requestPermissionsAsync()
             if (status !== 'granted') {
                 return
@@ -131,8 +131,11 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
     ] as Option[]
 
   return (
-    <View style={styles.postContainer}>
-      {/* Шапка поста */}
+    <Animated.View 
+      style={styles.postContainer}
+      exiting={FadeInDown}
+      entering={FadeInUp}
+    >
       <View style={styles.postHeader}>
         <TouchableOpacity 
           style={{flexDirection: 'row', flex: 1}} 
@@ -142,7 +145,7 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
             <Image 
               source={{ uri: post.author.avatar }} 
               style={styles.avatar} 
-              placeholder={{ blurhash: post.author.avatar?.split("?")[1]}}
+              placeholder={{ blurhash: new URL(post.author.avatar).search.slice(1)}}
             />
           ) : <NotFound width={40} height={40}/>}
           
@@ -175,7 +178,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         </View>
       </View>
       
-      {/* Текст поста */}
       {post.content && (
         <View style={{ position: 'relative' }}>
           <FormattedText
@@ -227,7 +229,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         </View>
       )}
       
-      {/* Карусель изображений */}
       {post.images.length > 0 && (
         <View style={styles.carouselContainer}>
           <FlatList
@@ -250,7 +251,7 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
                     <Image 
                         source={{ uri: item }} 
                         style={styles.postImage} 
-                        placeholder={{ blurhash: item.split("?")[1] }}
+                        placeholder={{ blurhash: new URL(item).search.slice(1) }}
                         contentFit="cover"
                     />
                 </TouchableOpacity>
@@ -258,7 +259,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
             keyExtractor={(_, index: number) => index.toString()}
           />
           
-          {/* Индикаторы слайдов */}
           {post.images.length > 1 && (
             <View style={styles.indicatorContainer}>
               {post.images.map((_: string, index: number) => (
@@ -276,7 +276,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         </View>
       )}
       
-      {/* Действия */}
       <View style={styles.postActions}>
         <TouchableOpacity 
           style={styles.actionButton} 
@@ -308,7 +307,6 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         </TouchableOpacity>
       </View>
 
-      {/* Оверлей для закрытия меню по тапу вне его */}
       {showOptions && (
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
@@ -351,7 +349,7 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         selectedPost={post}
         otherParticipant={post.author}
       />
-    </View>
+    </Animated.View>
   )
 }
 
@@ -409,12 +407,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 10,
     borderWidth: 1,
     borderColor: '#eee',
   },
   authorInfo: {
     flex: 1,
+    marginLeft: 10,
   },
   authorName: {
     fontWeight: '600',

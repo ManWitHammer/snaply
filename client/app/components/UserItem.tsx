@@ -28,7 +28,7 @@ function UserListItem({ item, requests, handleAccept, handleReject }: UserListIt
           <Image
             source={{ uri: item.avatar }}
             style={styles.avatarPlaceholder}
-            placeholder={{ blurhash: item.avatar?.split('?')[1] }}
+            placeholder={{ blurhash: new URL(item.avatar).search.slice(1) }}
           />
         ) : (
           <NotFound width={40} height={40} />

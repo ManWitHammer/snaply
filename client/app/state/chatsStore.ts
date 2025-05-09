@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { apiUrl } from 'appConfig'
+import { apiUrl } from '../../appConfig'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
@@ -21,6 +21,7 @@ export interface ChatMessage {
     forwardedFromPost?: {
         _id: string
         author: ChatParticipant
+        images: string[]
     }
     forwardedFromUser?: ChatParticipant
     isTemp?: boolean
@@ -60,7 +61,7 @@ interface ChatState {
     editMessage: (chatId: string, messageId: string, newContent: string) => Promise<boolean>
 }
 
-export const useChatsStore = create<ChatState>((set, get) => ({
+const useChatsStore = create<ChatState>((set, get) => ({
     chats: [],
     currentChatId: null,
     loading: false,
@@ -186,3 +187,5 @@ export const useChatsStore = create<ChatState>((set, get) => ({
         }
     },
 }))
+
+export default useChatsStore

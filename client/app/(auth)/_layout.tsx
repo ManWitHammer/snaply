@@ -1,9 +1,9 @@
 import { Stack } from 'expo-router'
-import { View, Dimensions, Platform } from 'react-native';
+import { View, Dimensions } from 'react-native'
 import InApiError from "../components/InApiError"
-import * as NavigationBar from "expo-navigation-bar";
-import { useEffect } from "react";
-import { useAppearanceStore } from '../state/appStore';
+import * as NavigationBar from "expo-navigation-bar"
+import { useEffect } from "react"
+import useAppearanceStore from '../state/appStore'
 
 export default function RootLayout() {
     const { getGradient } = useAppearanceStore()
@@ -11,7 +11,7 @@ export default function RootLayout() {
     useEffect(() => {
         NavigationBar.setBackgroundColorAsync(activeColors[1])
         NavigationBar.setButtonStyleAsync("light")
-      }, []);
+      }, [])
     return (
         <View style={{flex: 1}}>
             <InApiError style={{width: Dimensions.get("window").width - 40, marginLeft: 20}}/>
@@ -40,5 +40,5 @@ export default function RootLayout() {
             </Stack>
         </View>
         
-    );
+    )
 }

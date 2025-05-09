@@ -53,14 +53,13 @@ interface PostsState {
   deleteComment: (postId: string, commentId: string) => Promise<boolean>
 }
 
-export const usePostsStore = create<PostsState>((set, get) => ({
+const usePostsStore = create<PostsState>((set, get) => ({
     posts: [],
     loading: false,
     error: null,
     currentPage: 1,
     totalPages: 1,
 
-    // Получение постов с пагинацией
     fetchPosts: async (page = 1) => {
       set({ loading: true, error: null })
       const AuthToken = await AsyncStorage.getItem('AuthToken')
@@ -161,7 +160,7 @@ export const usePostsStore = create<PostsState>((set, get) => ({
         return false
       }
     },
-    // Добавление комментария
+
     addComment: async (postId, text) => {
       try {
         const AuthToken = await AsyncStorage.getItem('AuthToken')
@@ -235,3 +234,5 @@ export const usePostsStore = create<PostsState>((set, get) => ({
       }
     }
 }))
+
+export default usePostsStore

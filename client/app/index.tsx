@@ -1,90 +1,111 @@
-import { Redirect } from 'expo-router';
-import { useEffect, useState } from 'react';
-import useStore from './state/store';
-import { Image, StyleSheet, Alert, View, TouchableOpacity, Text } from 'react-native';
+import { Redirect } from 'expo-router'
+import { useEffect, useState } from 'react'
+import useStore from './state/store'
+import { Image, StyleSheet, Alert, View, TouchableOpacity, Text } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useAppearanceStore } from './state/appStore'
+import useAppearanceStore from './state/appStore'
 import * as LocalAuthentication from 'expo-local-authentication'
-import * as Crypto from 'expo-crypto';
+import * as Crypto from 'expo-crypto'
+import { MaterialIcons } from '@expo/vector-icons'
 
 export default function Index() {
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(true)
 	const [redirectPath, setRedirectPath] = useState<string | null>(null)
 	const [pinCode, setPinCode] = useState<string>('')
 	const { getGradient, biometricLogin, localLogin, passwordHash } = useAppearanceStore()
 	const activeColors = getGradient()
-	const { checkAuth, setIsAuth } = useStore();
+	const { checkAuth, setIsAuth } = useStore()
 
 	const handlePinInput = async (digit: string) => {
 		if (pinCode.length < 4) {
-			const newPin = pinCode + digit;
-			setPinCode(newPin);
+			const newPin = pinCode + digit
+			setPinCode(newPin)
 			
 			if (newPin.length === 4) {
 				const hashedPassword = await Crypto.digestStringAsync(
 					Crypto.CryptoDigestAlgorithm.SHA256,
 					newPin
-				);
+				)
 				if (hashedPassword === passwordHash) {
-					setIsAuth(true);
-					setRedirectPath('/(app)');
+					setIsAuth(true)
+					setRedirectPath('/(app)')
 				} else {
-					Alert.alert('Неверный пароль');
-					setPinCode('');
+					Alert.alert('Неверный пароль')
+					setPinCode('')
 				}
 			}
 		}
-	};
+	}
+
+	const handleDeletePin = () => {
+		if (pinCode.length > 0) {
+			setPinCode(pinCode.slice(0, -1))
+		}
+	}
+
+	const handleExit = () => {
+		Alert.alert(
+			"Выход",
+			"Вы уверены, что хотите выйти?",
+			[
+				{
+					text: "Отмена",
+					style: "cancel"
+				},
+				{
+					text: "Выйти",
+					onPress: () => setRedirectPath('/(auth)')
+				}
+			]
+		)
+	}
 
 	const handleBiometricAuth = async () => {
-		const isAvailable = await LocalAuthentication.hasHardwareAsync();
-		const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-		const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+		const isAvailable = await LocalAuthentication.hasHardwareAsync()
+		const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync()
+		const isEnrolled = await LocalAuthentication.isEnrolledAsync()
 		console.log(isAvailable, supportedTypes, isEnrolled)
 	
 		if (!isAvailable || supportedTypes.length === 0 || !isEnrolled) {
-			Alert.alert('Биометрическая аутентификация недоступна');
-			return;
+			Alert.alert('Биометрическая аутентификация недоступна')
+			return
 		}
 	
 		const result = await LocalAuthentication.authenticateAsync({
 			promptMessage: 'Подтвердите отпечатком пальца',
 			fallbackLabel: 'Введите пароль',
 			cancelLabel: 'Отмена',
-		});
+		})
 	
 		if (result.success) {
 			return true
 		} else {
-			Alert.alert('Аутентификация не удалась')
 			return false
 		}
-	};
+	}
 
 	useEffect(() => {
 		const getData = async () => {
 			try {
-				setIsLoading(true);
-				const status = await checkAuth();
-				console.log(status)
+				setIsLoading(true)
+				const status = await checkAuth()
 				if (status === 200) {
 					if (localLogin && !biometricLogin) {
-						setIsLoading(false);
+						setIsLoading(false)
 					} else if (localLogin && biometricLogin) {
 						const res = await handleBiometricAuth()
 						if (res) {
-							setIsAuth(true);
-							setRedirectPath('/(app)');
+							setIsAuth(true)
+							setRedirectPath('/(app)')
 						} 
 					} else {
-						setIsAuth(true);
-						setRedirectPath('/(app)');
+						setIsAuth(true)
+						setRedirectPath('/(app)')
 					}
 				} else if (status === 403) {
-					setIsAuth(false);
 					setRedirectPath('/not-activate')
 				} else {
-					setIsLoading(false);
+					setIsLoading(false)
 					setRedirectPath('/(auth)')
 				}
 			} catch (err) {
@@ -93,20 +114,19 @@ export default function Index() {
 				setRedirectPath('/(auth)')
 			} finally {
 				if (!localLogin || biometricLogin) {
-					setIsLoading(false);
+					setIsLoading(false)
 				}
 			}
-		};
-		console.log("sdasdas")
-		getData();
-	}, []);
+		}
+		getData()
+	}, [])
 
 	if (isLoading && (!localLogin || biometricLogin) && !redirectPath) {
 		return (
 			<LinearGradient colors={activeColors} style={styles.container}>
 				<Image source={require('../assets/icon.png')} style={{width: 200, height: 200}}/>
 			</LinearGradient>
-		);
+		)
 	}
 
 	if (localLogin && !redirectPath) {
@@ -125,7 +145,7 @@ export default function Index() {
 						))}
 					</View>
 					<View style={styles.keypad}>
-						{[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((number) => (
+						{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
 							<TouchableOpacity
 								key={number}
 								style={styles.key}
@@ -134,17 +154,35 @@ export default function Index() {
 								<Text style={styles.keyText}>{number}</Text>
 							</TouchableOpacity>
 						))}
+						<TouchableOpacity
+							style={styles.key}
+							onPress={handleExit}
+						>
+							<MaterialIcons name="logout" size={24} color="white" />
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={styles.key}
+							onPress={() => handlePinInput('0')}
+						>
+							<Text style={styles.keyText}>0</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={styles.key}
+							onPress={handleDeletePin}
+						>
+							<MaterialIcons name="backspace" size={24} color="white" />
+						</TouchableOpacity>
 					</View>
 				</View>
 			</LinearGradient>
-		);
+		)
 	}
 
 	if (redirectPath) {
-		return <Redirect href={redirectPath} />;
+		return <Redirect href={redirectPath} />
 	}
 
-	return null;
+	return null
 }
 
 const styles = StyleSheet.create({
@@ -193,4 +231,4 @@ const styles = StyleSheet.create({
 		fontSize: 24,
 		color: 'white',
 	},
-});
+})

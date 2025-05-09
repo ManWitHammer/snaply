@@ -1,33 +1,27 @@
 import { create } from 'zustand'
 import axios from 'axios'
+import { Post } from './postsStore'
 import { apiUrl } from 'appConfig'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { io, Socket } from 'socket.io-client'
-import { useChatsStore } from './chatsStore'
-import { ca } from 'date-fns/locale'
+import socketStore from './socketStore'
+import useApperanceStore from './appStore'
 
-interface IUserFromPost {
+export interface IErrorUser {
+    email?: string
+    nickname?: string
+    password?: string
+    nameAndSurname?: string
+}
+
+export interface IUserFromPost {
     _id: string
     nickname: string
     name: string
     surname: string
     avatar: string | null
 }
-  
-interface Post {
-    _id: string
-    content: string
-    author: IUserFromPost
-    images: string[]
-    likes: string[]
-    commentsCount: number
-    visibility: string
-    commentsEnabled: boolean
-    aiGenerated: boolean
-    createdAt: string
-}
 
-interface IUser {
+export interface IUser {
     id?: string
     email: string
     nickname: string
@@ -38,7 +32,7 @@ interface IUser {
     description?: string
 }
 
-interface IProfileDto {
+export interface IProfileDto {
     user: {
         _id: string
         nickname: string
@@ -55,13 +49,14 @@ interface IProfileDto {
         friendsCount: number
         isFriend: boolean
         chatId?: string
+        sharedImages: string[]
         hasPendingRequest?: boolean
         sentRequest?: boolean
     }
     posts: Post[]
 }
 
-interface INotification {
+export interface INotification {
     avatar: string,
     name: string,
     surname: string,
@@ -69,7 +64,7 @@ interface INotification {
     path?: string;
 }
 
-interface ISearchDto {
+export interface ISearchDto {
     _id: string
     nickname: string
     name: string
@@ -78,7 +73,7 @@ interface ISearchDto {
     friends?: string[]
 }
 
-interface IUserPrivacy {
+export interface IUserPrivacy {
     avatar: "Все" | "друзья" | "я"
     friends: "Все" | "друзья" | "я"
     posts: "Все" | "друзья" | "я"
@@ -98,22 +93,18 @@ interface FormStore {
         email?: string
         nickname?: string
         password?: string
-        name?: string
-        surname?: string
+        nameAndSurname?: string
     }
-    socket: Socket | null
     notifications: INotification[]
     isAuth: boolean
 
-    initSocket: () => Promise<void>
-    disconnectSocket: () => void
     setIsAuth: (auth: boolean) => void
     setField: (field: keyof IUser, value: string) => void
     registration: () => Promise<boolean>
     login: () => Promise<number>
     checkAuth: () => Promise<number>
     logout: () => Promise<boolean>
-    validateField: (field: keyof IUser, value: string) => void
+    validateField: (field: keyof IErrorUser, value: string) => void
     setErrorMessage: (message: string) => void
     setNotifications: (notifications: INotification[]) => void
     setAvatar: (avatar: FormData) => Promise<boolean>
@@ -131,7 +122,9 @@ interface FormStore {
     fetchPhotos: (id: string, page: number) => Promise<IPhotosDto>
     deleteFriend: (friendId: string) => Promise<boolean>
     fetchUserPrivacy: () => Promise<IUserPrivacy>
-    updatePrivacy: (settings: IUserPrivacy) => Promise<boolean>;
+    updatePrivacy: (settings: IUserPrivacy) => Promise<boolean>
+    fetchUserFriends: (id: string, page: number) => Promise<IUserFromPost[]>
+    fetchSharedImages: (id: string, page: number) => Promise<IPhotosDto>
 }
 
 const useStore = create<FormStore>((set, get) => ({
@@ -142,117 +135,6 @@ const useStore = create<FormStore>((set, get) => ({
     notifications: [],
     isAuth: false,
 
-    initSocket: async () => {
-        const token = await AsyncStorage.getItem('AuthToken');
-        if (!token || get().socket?.connected) return;
-    
-        const newSocket = io(apiUrl, {
-          auth: { token },
-          transports: ['websocket'],
-        });
-    
-        newSocket.on('connect', () => {
-          console.log('Socket connected');
-        });
-
-        newSocket.on('accountActivated', (data) => {
-            set({ user: data.userDto })
-        });
-
-        newSocket.on('newFriendRequest', (data) => {
-            const { userDto } = data;
-        
-            const newNotification = {
-                avatar: userDto.avatar,
-                name: userDto.name,
-                surname: userDto.surname,
-                content: "Отправил вам приглашение в друзья",
-                path: '/profile/' + userDto.id
-            }
-            set((state) => ({
-                notifications: [...state.notifications, newNotification]
-            }))
-        })
-
-        newSocket.on('friendRequestAccepted', (data) => {
-            const { userDto } = data;
-        
-            const newNotification = {
-                avatar: userDto.avatar,
-                name: userDto.name,
-                surname: userDto.surname,
-                content: "Принял вашу заявку в друзья",
-                path: '/friends'
-            }
-            set((state) => ({
-                notifications: [...state.notifications, newNotification]
-            }))
-        })
-
-        newSocket.on('friendRequestRejected', (data) => {
-            const { userDto } = data;
-
-            if (userDto.id == get().user?.id) {
-                return;
-            }
-            console.log(userDto.id, get().user?.id)
-        
-            const newNotification = {
-                avatar: userDto.avatar,
-                name: userDto.name,
-                surname: userDto.surname,
-                content: "Отклонил вашу заявку в друзья", 
-            }
-            set((state) => ({
-                notifications: [...state.notifications, newNotification]
-            }))
-        })
-
-        newSocket.on('friendDeleted', (data) => {
-            const { userDto } = data;
-
-            const newNotification = {
-                avatar: userDto.avatar,
-                name: userDto.name,
-                surname: userDto.surname,
-                content: "Удалил вас из друзей",
-            }
-            set((state) => ({
-                notifications: [...state.notifications, newNotification]
-            }))
-        })
-
-        newSocket.on('newMessage', (data) => {
-            const { message, chatId, userDto } = data
-            const { isUserInChat } = useChatsStore.getState()
-            const isReally = isUserInChat(chatId)
-            console.log(isReally, chatId)
-
-            if (!isReally) {
-              const newNotification = {
-                avatar: userDto.avatar,
-                name: userDto.name,
-                surname: userDto.surname,
-                content: message.content,
-                path: '/chat/' + chatId
-              };
-              set((state) => ({
-                notifications: [...state.notifications, newNotification]
-              }));
-            }
-        })
-    
-        newSocket.on('disconnect', () => {
-          console.log('Socket disconnected');
-        })
-    
-        set({ socket: newSocket });
-    },
-    
-    disconnectSocket: () => {
-        get().socket?.disconnect();
-        set({ socket: null });
-    },
     setIsAuth: (auth) => {
         set({ isAuth: auth })
     },
@@ -263,121 +145,115 @@ const useStore = create<FormStore>((set, get) => ({
     },
     validateField: (field, value) => {
         const errors = { ...get().errors }
-
+      
         switch (field) {
-            case 'email':
-                if (!value) {
-                errors.email = 'Нужен email'
-                } else if (!/\S+@\S+\.\S+/.test(value)) {
-                    errors.email = 'Invalid email format'
+          case 'email':
+            if (!value) {
+              errors.email = 'Нужен email'
+            } else if (!/\S+@\S+\.\S+/.test(value)) {
+              errors.email = 'Неверный формат электронной почты'            
+            } else {
+              delete errors.email
+            }
+            break
+      
+          case 'nickname':
+            if (!value) {
+              errors.nickname = 'Нужен Никнейм'
+            } else if (value.length < 2) {
+              errors.nickname = 'Никнейм должен состоять из минимум 2 символов'
+            } else if (value.length > 24) {
+              errors.nickname = 'Никнейм должен состоять из максимум 24 символов'
+            } else if (!/^[a-zA-Z0-9._-]+$/.test(value)) {
+              errors.nickname = 'Никнейм может содержать только латинские буквы, цифры, точку, подчеркивание и дефис'
+            } else {
+              delete errors.nickname
+            }
+            break      
+          case 'password':
+            if (!value) {
+              errors.password = 'Нужен пароль'
+            } else if (value.length < 6) {
+              errors.password = 'Пароль должен состоять из минимум 6 символов'
+            } else {
+              delete errors.password
+            }
+            break
+      
+            case 'nameAndSurname':
+                const user = get().user ?? { name: '', surname: '' }
+                const name = user.name.trim()
+                const surname = user.surname.trim()
+              
+                if (!name || !surname) {
+                  errors.nameAndSurname = 'Нужны имя и фамилия'
+                } else if (name.length < 2 || surname.length < 2) {
+                  errors.nameAndSurname = 'Имя и фамилия должны быть минимум по 2 символа'
+                } else if (name.length > 32 || surname.length > 24) {
+                  errors.nameAndSurname = 'Имя и фамилия должны быть максимум по 24 символа'
                 } else {
-                    delete errors.email
+                  delete errors.nameAndSurname
                 }
                 break
-
-            case 'nickname':
-                if (!value) {
-                    errors.nickname = 'Нужен Никнейм'
-                } else if (value.length < 2) {
-                    errors.nickname = 'Никнейм должен состоять из минимум 2 символов'
-                } else if (value.length > 32) {
-                    errors.nickname = 'Никнейм должен состоять из максимум 32 символов'
-                } else {
-                    delete errors.nickname
-                }
-                break
-
-            case 'password':
-                if (!value) {
-                    errors.password = 'Нужен пароль'
-                } else if (value.length < 6) {
-                    errors.password = 'Пароль должен состоять из минимум 6 символов'
-                } else {
-                    delete errors.password
-                }
-                break
-
-            case 'name':
-                if (!value) {
-                    errors.name = 'Нужно имя'
-                } else if (value.length > 32) {
-                    errors.name = 'имя должен состоять из максимум 32 символов'
-                } else if (value.length < 2) {
-                    errors.name = 'имя должен состоять из минимум 2 символов'
-                } else {
-                    delete errors.name
-                }
-                break
-
-            case 'surname':
-                if (!value) {
-                    errors.surname = 'Нужна фамилия'
-                } else if (value.length > 32) {
-                    errors.surname = 'фамилия должен состоять из максимум 32 символов'
-                } else if (value.length < 2) {
-                    errors.surname = 'фамилия должен состоять из минимум 2 символов'
-                } else {
-                    delete errors.surname
-                }
-                break
-
-            default:
-                break
+      
+          default:
+            break
         }
-
+      
         set({ errors })
     },
 
     registration: async () => {
         const { user, validateField } = get()
-
-        const requiredFields: (keyof IUser)[] = ['email', 'nickname', 'password', 'name', 'surname']
+    
+        const requiredFields: (keyof IUser)[] = ['email', 'nickname', 'password']
         let isValid = true
-
+    
         requiredFields.forEach((field) => {
             const value = user?.[field]
             if (!value || value.trim() === '') {
-            validateField(field, '')
-            isValid = false
+                validateField(field as keyof IErrorUser, '')
+                isValid = false
             }
         })
-
-        // Если есть ошибки, возвращаем false
+    
+        validateField('nameAndSurname', '')
+        if (get().errors.nameAndSurname) {
+            isValid = false
+        }
+    
         if (!isValid || Object.keys(get().errors).length > 0) {
             return false
         }
-
-        if (Object.keys(get().errors).length == 0) {
-            try {
-                const res = await axios.post(`${apiUrl}/api/register`, {
-                    email: user?.email,
-                    nickname: user?.nickname,
-                    name: user?.name,
-                    surname: user?.surname,
-                    password: user?.password,
-                }, {withCredentials: true})
-
-                if (res.data) {
-                    set({user: res.data.userDto})
-                    await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
-                    await get().initSocket()
-                    return true
-                }
-                else return false
-            } catch (error: any) {
-                if (error.response) {
-                    set({errorMessage: error.response.data.message})
-                } else if (error.request) {
-                    set({errorMessage: 'Нет ответа от сервера'})
-                } else {
-                    set({errorMessage: 'Непредвиденная ошибка'})
-                }
+    
+        try {
+            const res = await axios.post(`${apiUrl}/api/register`, {
+                email: user?.email,
+                nickname: user?.nickname,
+                name: user?.name,
+                surname: user?.surname,
+                password: user?.password,
+            }, { withCredentials: true })
+    
+            if (res.data) {
+                set({ user: res.data.userDto })
+                await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
+                await socketStore.getState().initSocket()
+                return true
+            } else {
                 return false
             }
-        } else {
+        } catch (error: any) {
+            if (error.response) {
+                set({ errorMessage: error.response.data.message })
+            } else if (error.request) {
+                set({ errorMessage: 'Нет ответа от сервера' })
+            } else {
+                set({ errorMessage: 'Непредвиденная ошибка' })
+            }
             return false
         }
-    },    
+    },
     setErrorMessage: (message) => set({ errorMessage: message }),
 
     setNotifications: (notifications: INotification[]) => set({ notifications }),
@@ -391,14 +267,14 @@ const useStore = create<FormStore>((set, get) => ({
                 nickname: user?.nickname,
             }, {withCredentials: true})
             if (res.data && res.data.userDto.isActivated) {
-                set({user: res.data.userDto, isAuth: true})
+                set({user: res.data.userDto})
                 await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
-                await get().initSocket()
+                await socketStore.getState().initSocket()
                 return res.status
             } else if (res.data && !res.data.userDto.isActivated) {
                 set({user: res.data.userDto})
                 await AsyncStorage.setItem('AuthToken', res.data.refreshToken)
-                await get().initSocket()
+                await socketStore.getState().initSocket()
                 return 403
             } else return res.status
         } catch(error: any) {
@@ -418,15 +294,14 @@ const useStore = create<FormStore>((set, get) => ({
             const response = await axios.get(`${apiUrl}/api/checkauth`, {
                 headers: { Authorization: AuthToken }
             });
-            console.log(response)
             if (response.data && response.data.userDto.isActivated) {
                 set({ user: response.data.userDto });
-                await get().initSocket()
+                await socketStore.getState().initSocket()
                 console.log(response.data)
                 return response.status
             } else if (response.data && !response.data.userDto.isActivated) {
                 set({ user: response.data.userDto });
-                await get().initSocket()
+                await socketStore.getState().initSocket()
                 return 403
             } else return response.status
         } catch (err: any) {
@@ -435,17 +310,18 @@ const useStore = create<FormStore>((set, get) => ({
     },
     logout: async () => {
         try {
+            const { cleanAll } = useApperanceStore.getState()
             const AuthToken = await AsyncStorage.getItem('AuthToken')
             const res = await axios.get(`${apiUrl}/api/logout`, {
                 headers: {
                     Authorization: AuthToken
                 }
             })
-            console.log(res.data)
             if (res.data) {
                 set({user: null, isAuth: false})
-                get().disconnectSocket()
+                socketStore.getState().disconnectSocket()
                 await AsyncStorage.removeItem('AuthToken')
+                cleanAll()
                 return true
             }
             else return false
@@ -469,7 +345,6 @@ const useStore = create<FormStore>((set, get) => ({
               Authorization: AuthToken,
             },
           })
-          console.log(res.data)
           if (res.data) {
             const updatedUser = { 
               ...get().user ?? { email: '', nickname: '', name: '', surname: '' }, 
@@ -514,7 +389,7 @@ const useStore = create<FormStore>((set, get) => ({
             }
         }
     },
-    getUser: async (id: string, page: number = 1) => {
+    getUser: async (id: string, page: number) => {
         try {
             const AuthToken = await AsyncStorage.getItem('AuthToken')
             const res = await axios.get(`${apiUrl}/api/user/${id}?page=${page}`, {
@@ -839,6 +714,52 @@ const useStore = create<FormStore>((set, get) => ({
                 set({ errorMessage: 'Непредвиденная ошибка' })
             }
             return false
+        }
+    },
+    fetchUserFriends: async (id: string, page?: number) => {
+        try {
+            const AuthToken = await AsyncStorage.getItem('AuthToken')
+            const { data } = await axios.get(`${apiUrl}/api/user/info/friends/${id}?page=${page}`, {
+                headers: {
+                    Authorization: AuthToken
+                }
+            })
+            if (data) {
+                return data
+            }
+            else return null
+        } catch(error: any) {
+            if (error.response) {
+                set({ errorMessage: error.response.data.message })
+            } else if (error.request) {
+                set({ errorMessage: 'Нет ответа от сервера' })
+            } else {
+                set({ errorMessage: 'Непредвиденная ошибка' })
+            }
+            return null
+        }
+    },
+    fetchSharedImages: async (id: string, page?: number) => {
+        try {
+            const AuthToken = await AsyncStorage.getItem('AuthToken')
+            const { data } = await axios.get(`${apiUrl}/api/user/info/sharedImages/${id}?page=${page}`, {
+                headers: {
+                    Authorization: AuthToken
+                }
+            })
+            if (data) {
+                return data
+            }
+            else return null
+        } catch(error: any) {
+            if (error.response) {
+                set({ errorMessage: error.response.data.message })
+            } else if (error.request) {
+                set({ errorMessage: 'Нет ответа от сервера' })
+            } else {
+                set({ errorMessage: 'Непредвиденная ошибка' })
+            }
+            return null
         }
     }
 }))

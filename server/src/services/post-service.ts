@@ -30,8 +30,15 @@ class PostService {
         const user = await UserModel.findOne({ email: userData.email })
         
         if (!user) throw ApiError.UnauthorizedError()
+
+        if (!text || text.trim().length === 0) {
+            throw ApiError.BadRequest('Текст поста не может быть пустым')
+        }
+
+        if (text.length > 1200) {
+            throw ApiError.BadRequest('Текст поста не может быть длиннее 5000 символов')
+        }
     
-        // Загружаем все изображения параллельно
         await Cassiopeia.updateTokens()
         const uploadedImages = await Promise.all(
             images.map(async (imagePath) => {
@@ -39,18 +46,18 @@ class PostService {
                     const buffer = fs.readFileSync(imagePath)
                     const fileName = imagePath.split('\\').pop()
                     if (!fileName) {
-                        throw new Error('Invalid file name')
+                        throw new Error('Некорректное имя файла')
                     }
                     
                     const result = await Cassiopeia.upload(buffer, fileName, true)
                     
                     if (!result || typeof result !== 'object' || !('uuid' in result)) {
-                        throw new Error('Upload failed')
+                        throw new Error('Ошибка загрузки файла')
                     }
                     
                     return `https://cassiopeia-database-195be7295ffe.herokuapp.com/api/v1/files/public/${result.uuid}?${result.blurhash}`
                 } catch (error) {
-                    console.error(`Error uploading image ${imagePath}:`, error)
+                    console.error(`Ошибка загрузки изображения ${imagePath}:`, error)
                     return null
                 }
             })
@@ -71,7 +78,7 @@ class PostService {
         })
         
         return post
-    }
+    }    
     async getPosts(page: number, limit: number, authHeader: string) {
         if (!authHeader) throw ApiError.UnauthorizedError()
         

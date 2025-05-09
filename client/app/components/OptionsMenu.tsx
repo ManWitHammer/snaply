@@ -1,24 +1,24 @@
-import React, { useRef, useEffect } from 'react';
-import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useRef, useEffect } from 'react'
+import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 
 interface Option {
-    label: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    action: () => void | Promise<void>;
-    color?: string;
-};
+    label: string
+    icon: keyof typeof Ionicons.glyphMap
+    action: () => void | Promise<void>
+    color?: string
+}
 
 interface OptionsMenuProps {
-  visible: boolean;
-  options: Option[];
-  position?: { x: number; y: number };
-  onClose?: () => void;
-  customStyle?: ViewStyle;
-};
+  visible: boolean
+  options: Option[]
+  position?: { x: number, y: number }
+  onClose?: () => void
+  customStyle?: ViewStyle
+}
 
 const OptionsMenu: React.FC<OptionsMenuProps> = ({ visible, position, options, onClose, customStyle }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -26,15 +26,15 @@ const OptionsMenu: React.FC<OptionsMenuProps> = ({ visible, position, options, o
       duration: 150,
       useNativeDriver: true,
     }).start(() => {
-      if (!visible) onClose?.();
-    });
-  }, [visible]);
+      if (!visible) onClose?.()
+    })
+  }, [visible])
 
-  if (!visible) return null;
+  if (!visible) return null
 
   const handleAction = (action: Function, index?: number) => {
-    action(index); // передаем index, если он есть
-  };
+    action(index) 
+  }
 
   return (
     <Animated.View style={[styles.optionsMenu, position && { position: 'absolute', left: position.x, top: position.y, }, customStyle, { opacity: fadeAnim }]}>
@@ -51,8 +51,8 @@ const OptionsMenu: React.FC<OptionsMenuProps> = ({ visible, position, options, o
         </TouchableOpacity>
       ))}
     </Animated.View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   optionsMenu: {
@@ -78,6 +78,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-});
+})
 
-export default OptionsMenu;
+export default OptionsMenu

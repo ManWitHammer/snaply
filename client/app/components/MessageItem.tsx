@@ -1,37 +1,16 @@
-import React from 'react';
-import { View, Text, Pressable, Image, Animated, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react'
+import { View, Text, Pressable, Image, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { format, parseISO } from 'date-fns'
 import FormattedText from './FormattedText'
-
-interface ChatParticipant {
-    _id: string
-    name: string
-    surname: string
-    avatar: string | null
-}
-
-interface IMessage {
-    _id: string
-    sender: ChatParticipant
-    content: string
-    image: string
-    isOwnMessage: boolean
-    isEdited: boolean
-    timestamp: string
-    isTemp?: boolean
-    forwardedFromPost?: {
-      _id: string
-      author: ChatParticipant
-    }
-    forwardedFromUser?: ChatParticipant
-  }
+import { ChatMessage } from '../state/chatsStore'
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 interface MessageItemProps {
-  item: IMessage
-  handleLongPress: (item: IMessage, e: any) => void;
-  setShowOptions: (show: boolean) => void;
-  commentColor: string;
+  item: ChatMessage
+  handleLongPress: (item: ChatMessage, e: any) => void
+  setShowOptions: (show: boolean) => void
+  commentColor: string
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setShowOptions, commentColor }) => (
@@ -43,6 +22,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
     {({ pressed }) => (
       <>
         <Animated.View
+          entering={FadeInDown} 
+          exiting={FadeOutDown}
           style={[
             styles.messageContainer,
             item.isOwnMessage
@@ -59,7 +40,6 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
             </Text>
           )}
 
-          {/* Переслано из поста */}
           {item.forwardedFromPost && (
             <View
               style={[
@@ -85,7 +65,6 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
             </View>
           )}
 
-          {/* Переслано от пользователя */}
           {item.forwardedFromUser && (
             <View
               style={[
@@ -139,10 +118,9 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
           </View>
         </Animated.View>
 
-        {/* Изображение сообщения */}
-        {item.image && (
+        {(item.image || (item.forwardedFromPost && item.forwardedFromPost?.images?.length > 0)) && (
           <Animated.Image
-            source={{ uri: item.image }}
+            source={{ uri: item.image || item.forwardedFromPost?.images[0] }}
             style={[
               styles.messageImage,
               item.isOwnMessage ? styles.myMessageImage : styles.theirMessageImage,
@@ -274,4 +252,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default MessageItem;
+export default MessageItem

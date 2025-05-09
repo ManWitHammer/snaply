@@ -1,25 +1,25 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import CustomModal from "../../components/CustomLeftModal";
-import useStore from "../../state/store";
-import { useRouter } from "expo-router";
-import { useAppearanceStore, ThemeKey } from "../../state/appStore";
+import { useState } from "react"
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import CustomModal from "../../components/CustomLeftModal"
+import useStore from "../../state/store"
+import { useRouter } from "expo-router"
+import useAppearanceStore from "../../state/appStore"
 
 export default function AccountScreen() {
   const router = useRouter()
   const { user, updateUser } = useStore()
-  const [name, setName] = useState(user?.name || "Имя");
-  const [surname, setSurname] = useState(user?.surname || "Фамилия");
-  const [nickname, setNickname] = useState(user?.nickname || "Nickname");
-  const [bio, setBio] = useState(user?.description || "О себе...");
+  const [name, setName] = useState(user?.name || "Имя")
+  const [surname, setSurname] = useState(user?.surname || "Фамилия")
+  const [nickname, setNickname] = useState(user?.nickname || "Nickname")
+  const [bio, setBio] = useState(user?.description || "О себе...")
   const { getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const activeColors = getGradient()
 
   const handleSave = async () => {
     const res = await updateUser(name, surname, nickname, bio)
     if (res) router.back()
-  };
+  }
 
   return (
     <CustomModal title="Мой аккаунт">
@@ -45,7 +45,7 @@ export default function AccountScreen() {
           </ScrollView>
       </LinearGradient>
     </CustomModal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -98,4 +98,4 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   saveButtonText: { color: "#445b73", fontWeight: "bold" },
-});
+})

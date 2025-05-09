@@ -1,5 +1,5 @@
 import { Link, useRouter } from "expo-router"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -9,27 +9,64 @@ import {
   Platform,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Keyboard,
+  Animated,
+  Easing
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import CustomInput from "@/components/CustomInput"
 import useStore from "../state/store"
-import { useAppearanceStore } from '../state/appStore';
+import useAppearanceStore from '../state/appStore'
 
 export default function LoginScreen() {
-  const { user, setField, login } = useStore()
+  const { user, setField, login, setIsAuth } = useStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [keyboardHeight] = useState(new Animated.Value(0))
   const { getGradient } = useAppearanceStore()
   const activeColors = getGradient()
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        Animated.timing(keyboardHeight, {
+          toValue: e.endCoordinates.height,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }).start()
+      }
+    )
+
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.timing(keyboardHeight, {
+          toValue: 0,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }).start()
+      }
+    )
+
+    return () => {
+      showSubscription.remove()
+      hideSubscription.remove()
+    }
+  }, [])
+
   const handlePress = async () => {
+    Keyboard.dismiss()
     setIsLoading(true)
     try {
       const res = await login()
       if (res == 200) {
-		    router.replace('/(app)')
+        router.replace('/(app)')
+        setIsAuth(true)
       } else if (res == 403) {
         router.replace('/not-activate')
       }
@@ -41,64 +78,96 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, width: "100%" }}
-    >
-      <LinearGradient colors={activeColors} style={styles.container}>
+    <LinearGradient colors={activeColors} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+        enabled={Platform.OS === "ios"}
+      >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
         >
-            <Text style={styles.title}>Вход</Text>
-            <View style={{ flex: 1, width: "90%", alignItems: "center" }}>
-                <CustomInput
-                    icon="person-outline"
-                    value={user && user.nickname ? user.nickname : ""}
-                    placeholder="Имя пользователя"
-                    onChangeText={(text) => {
-                        setField("nickname", text)
-                    }}
-                />
+          <Animated.View 
+            style={[
+              styles.contentWrapper,
+              { paddingBottom: keyboardHeight }
+            ]}
+          >
+            <View style={styles.mainContent}>
+              <Text style={styles.title}>Вход</Text>
+              
+              <CustomInput
+                icon="person-outline"
+                value={user?.nickname || ""}
+                placeholder="Имя пользователя"
+                onChangeText={(text) => setField("nickname", text)}
+              />
 
-                <CustomInput
-                    icon="lock-closed-outline"
-                    value={user && user.password ? user.password : ""}
-                    placeholder="Пароль"
-                    secureTextEntry={!passwordVisible}
-                    onToggleSecure={() => setPasswordVisible(!passwordVisible)}
-                    onChangeText={(text) => {
-                        setField("password", text)
-                    }}
-                />
-                <TouchableOpacity onPress={handlePress} disabled={isLoading} style={styles.button}>
-                  {isLoading ? (
-                    <ActivityIndicator color='#445b73' />
-                  ) : (
-                    <Text style={[styles.buttonText, { color: activeColors[0] }]}>Войти</Text>
-                  )}
-                </TouchableOpacity>
+              <CustomInput
+                icon="lock-closed-outline"
+                value={user?.password || ""}
+                placeholder="Пароль"
+                secureTextEntry={!passwordVisible}
+                onToggleSecure={() => setPasswordVisible(!passwordVisible)}
+                onChangeText={(text) => setField("password", text)}
+              />
+              
+              <TouchableOpacity 
+                onPress={handlePress} 
+                disabled={isLoading} 
+                style={styles.button}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={activeColors[0]} />
+                ) : (
+                  <Text style={[styles.buttonText, { color: activeColors[0] }]}>Войти</Text>
+                )}
+              </TouchableOpacity>
             </View>
-              <Text style={styles.linkText}>Нет аккаунта? <Link href="/register" style={styles.link}>Зарегистрироваться</Link></Text>
-            </ScrollView>
-        </LinearGradient>
-    </KeyboardAvoidingView>
+            
+            <View style={styles.bottomLinkContainer}>
+              <Text style={styles.linkText}>
+                Нет аккаунта? <Link href="/register" style={styles.link} replace>Зарегистрироваться</Link>
+              </Text>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    paddingTop: 40,
-    alignItems: "center",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
+    minHeight: Dimensions.get('window').height,
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  mainContent: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 40,
     alignItems: "center",
     width: "100%",
+  },
+  bottomLinkContainer: {
+    width: '100%',
+    padding: 20,
+    paddingBottom: 30,
   },
   title: {
     fontSize: 28,
@@ -106,30 +175,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 20,
   },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 15,
-    width: "90%",
-  },
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    color: "#fff",
-  },
-  forgotPassword: {
-    color: "#ffcccb",
-    textAlign: "right",
-    marginBottom: 20,
-  },
   button: {
     padding: 15,
     borderRadius: 25,
     backgroundColor: 'white',
-    width: Dimensions.get("screen").width * 0.9 - 40,
+    width: Dimensions.get("screen").width * 0.9,
     alignItems: "center",
   },
   buttonText: {
@@ -138,7 +188,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     textAlign: "center",
-    marginTop: 20,
     color: "#fff",
   },
   link: {

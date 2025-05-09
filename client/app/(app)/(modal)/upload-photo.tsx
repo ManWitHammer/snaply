@@ -3,21 +3,24 @@ import CustomLeftModal from "../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
 import * as ImagePicker from 'expo-image-picker'
 import { useState } from "react"
-import Ionicons from "react-native-vector-icons/Ionicons"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import useStore from '../../state/store'
 import { useRouter } from "expo-router"
-import { useAppearanceStore } from "../../state/appStore";
+import useAppearanceStore from "../../state/appStore"
 import { Image } from "expo-image"
+import socketStore from "../../state/socketStore"
 
-const imageWidth = Dimensions.get('window').width - 30;
+const imageWidth = Dimensions.get('window').width - 30
 
 export default function CreatePost() {
     const { uploadPhotos } = useStore()
+    const { socket } = socketStore()
     const router = useRouter()
     const [images, setImages] = useState<{ uri: string, type: string, name: string }[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState<{ index: number, count: number } | null>(null)
     const { getGradient } = useAppearanceStore()
-    const activeColors = getGradient();
+    const activeColors = getGradient()
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -51,6 +54,10 @@ export default function CreatePost() {
     const handleSubmit = async () => {
         setIsLoading(true)
         try {
+            socket?.on('publishImage', (data: { imageIndex: number, count: number }) => {
+                setUploadProgress({ index: data.imageIndex, count: data.count })
+            })
+
             const formData = new FormData()
             images.forEach((image, index) => {
                 formData.append('images', {
@@ -67,6 +74,8 @@ export default function CreatePost() {
             console.error('Ошибка:', error)
         } finally {
             setIsLoading(false)
+            setUploadProgress(null)
+            socket?.off('publishImage')
         }
     }
 
@@ -76,7 +85,11 @@ export default function CreatePost() {
                 {isLoading && (
                     <View style={styles.loaderContainer}>
                         <ActivityIndicator size="large" color="#fff" />
-                        <Text style={styles.loaderText}>Публикация фотографий...</Text>
+                        <Text style={styles.loaderText}>
+                            {uploadProgress 
+                                ? `Загружено ${uploadProgress.index} из ${uploadProgress.count} фото...`
+                                : 'Публикация фотографий...'}
+                        </Text>
                     </View>
                 )}
                 <View style={styles.container}>
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "rgba(255,255,255,0.1)",
         borderRadius: 10,
-        marginBottom: 10, // отступ до кнопок
+        marginBottom: 10,
     },
     placeholder: {
         justifyContent: 'center',

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router"
 import { View, ScrollView, StyleSheet, TouchableOpacity, Animated as Anim, Switch, Text } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import useStore from "../../state/store"
-import { useAppearanceStore, ThemeKey } from "../../state/appStore"
+import useAppearanceStore, { ThemeKey } from "../../state/appStore"
 import CustomLeftModal from "../../components/CustomLeftModal"
 
 export default function ApperanceScreen() {
@@ -157,7 +157,6 @@ export default function ApperanceScreen() {
                 />
               </View>
             </View>
-
             <View style={styles.bottomSpacer} />
           </ScrollView>
         </LinearGradient>
@@ -202,7 +201,7 @@ const styles = StyleSheet.create({
   colorCircle: {
     width: 20,
     height: 20,
-    borderRadius: 10,  // это сделает элемент круглым
+    borderRadius: 10,
   },
   themeButtonsContainer: {
     flexDirection: 'row',

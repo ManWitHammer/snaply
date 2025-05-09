@@ -1,12 +1,12 @@
 import { Text, StyleSheet, View, TouchableOpacity, Modal, ActivityIndicator, Platform, Alert } from "react-native"
 import { Stack, useRouter } from "expo-router"
-import Feather from "react-native-vector-icons/Feather"
+import Feather from "@expo/vector-icons/Feather"
 import CustomHeader from "../../components/CustomHeader"
 import { LinearGradient } from "expo-linear-gradient"
 import NotFound from "assets/not-found"
 import useStore from "@/state/store"
 import { useState } from "react"
-import { useAppearanceStore } from "../../state/appStore";
+import useAppearanceStore from "../../state/appStore"
 import { Image } from "expo-image"
 
 export default function MenuScreen() {
@@ -15,7 +15,7 @@ export default function MenuScreen() {
     const [isLogoutModalVisible, setLogoutModalVisible] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const { getGradient } = useAppearanceStore()
-    const activeColors = getGradient();
+    const activeColors = getGradient()
 
     const handleLogout = () => {
         if (Platform.OS === 'ios') {
@@ -25,7 +25,7 @@ export default function MenuScreen() {
                   style: 'cancel',
                 },
                 {text: 'OK', onPress: confirmLogout, style: 'destructive'},
-            ]);
+            ])
         } else {
             setLogoutModalVisible(true)
         }
@@ -60,7 +60,7 @@ export default function MenuScreen() {
                             <Image 
                                 source={{ uri: user.avatar }} 
                                 style={styles.avatarImage} 
-                                placeholder={{ blurhash: user.avatar.split("?")[1] }}
+                                placeholder={{ blurhash: new URL(user.avatar).search.slice(1) }}
                             />
                         </View>
                     ) : <NotFound />}
@@ -99,7 +99,6 @@ export default function MenuScreen() {
                 <Text style={styles.logoutText}>Выйти</Text>
             </TouchableOpacity>
 
-            {/* Модальное окно подтверждения выхода */}
             <Modal
                 statusBarTranslucent
                 visible={isLogoutModalVisible}

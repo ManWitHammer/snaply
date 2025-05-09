@@ -1,118 +1,118 @@
-import { useState } from "react";
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useAppearanceStore } from "../state/appStore";
+import { useState } from "react"
+import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native"
+import useAppearanceStore from "../state/appStore"
 import * as Crypto from 'expo-crypto'
 
 interface PasswordModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (password: string) => void;
-  isEditable?: boolean;
-  isDeletable?: boolean;
+  visible: boolean
+  onClose: () => void
+  onSubmit: (password: string) => void
+  isEditable?: boolean
+  isDeletable?: boolean
 }
 
 export default function PasswordModal({ visible, onClose, onSubmit, isEditable = false, isDeletable = false }: PasswordModalProps) {
-  const [password, setPassword] = useState("");
-  const [firstPassword, setFirstPassword] = useState("");
-  const [isConfirmation, setIsConfirmation] = useState(false);
-  const [step, setStep] = useState<'current' | 'new' | 'confirm'>('current');
+  const [password, setPassword] = useState("")
+  const [firstPassword, setFirstPassword] = useState("")
+  const [isConfirmation, setIsConfirmation] = useState(false)
+  const [step, setStep] = useState<'current' | 'new' | 'confirm'>('current')
   const { passwordHash, getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const activeColors = getGradient()
 
   const handleClose = () => {
-    onClose();
-    setPassword("");
-    setFirstPassword("");
-    setIsConfirmation(false);
-    setStep('current');
+    onClose()
+    setPassword("")
+    setFirstPassword("")
+    setIsConfirmation(false)
+    setStep('current')
   }
 
   const handlePress = async (num: string) => {
     if (password.length < 4) {
-      const newPassword = password + num;
-      setPassword(newPassword);
+      const newPassword = password + num
+      setPassword(newPassword)
       if (newPassword.length === 4) {
           if (isDeletable) {
             const hashedPassword = await Crypto.digestStringAsync(
               Crypto.CryptoDigestAlgorithm.SHA256,
               newPassword
-            );
+            )
             if (hashedPassword === passwordHash) {
-              onSubmit(newPassword);
-              setPassword("");
+              onSubmit(newPassword)
+              setPassword("")
             } else {
-              setPassword("");
+              setPassword("")
             }
           } else if (isEditable) {
             if (step === 'current') {
               const hashedPassword = await Crypto.digestStringAsync(
                 Crypto.CryptoDigestAlgorithm.SHA256,
                 newPassword
-              );
+              )
               if (hashedPassword === passwordHash) {
-                setPassword("");
-                setStep('new');
+                setPassword("")
+                setStep('new')
               } else {
-                setPassword("");
+                setPassword("")
               }
             } else if (step === 'new') {
-              setFirstPassword(newPassword);
-              setPassword("");
-              setStep('confirm');
+              setFirstPassword(newPassword)
+              setPassword("")
+              setStep('confirm')
             } else {
               if (newPassword === firstPassword) {
-                onSubmit(newPassword);
-                setPassword("");
-                setFirstPassword("");
-                setIsConfirmation(false);
-                setStep('current');
+                onSubmit(newPassword)
+                setPassword("")
+                setFirstPassword("")
+                setIsConfirmation(false)
+                setStep('current')
               } else {
-                setPassword("");
+                setPassword("")
               }
             }
           } else {
             if (!isConfirmation) {
-              setFirstPassword(newPassword);
-              setPassword("");
-              setIsConfirmation(true);
+              setFirstPassword(newPassword)
+              setPassword("")
+              setIsConfirmation(true)
             } else {
               if (newPassword === firstPassword) {
-                onSubmit(newPassword);
-                setPassword("");
-                setFirstPassword("");
-                setIsConfirmation(false);
+                onSubmit(newPassword)
+                setPassword("")
+                setFirstPassword("")
+                setIsConfirmation(false)
               } else {
-                setPassword("");
-                setIsConfirmation(true);
+                setPassword("")
+                setIsConfirmation(true)
               }
             }
           }
       }
     }
-  };
+  }
 
   const handleDelete = () => {
     if (password.length > 0) {
-      setPassword(password.slice(0, -1));
+      setPassword(password.slice(0, -1))
     }
-  };
+  }
 
   const getTitle = () => {
     if (isDeletable) {
-      return "Введите текущий код-пароль";
+      return "Введите текущий код-пароль"
     }
     if (isEditable) {
       switch (step) {
         case 'current':
-          return "Введите текущий код-пароль";
+          return "Введите текущий код-пароль"
         case 'new':
-          return "Введите новый код-пароль";
+          return "Введите новый код-пароль"
         case 'confirm':
-          return "Повторите новый код-пароль";
+          return "Повторите новый код-пароль"
       }
     }
-    return isConfirmation ? "Повторите код-пароль" : "Введите новый код-пароль";
-  };
+    return isConfirmation ? "Повторите код-пароль" : "Введите новый код-пароль"
+  }
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
@@ -140,9 +140,9 @@ export default function PasswordModal({ visible, onClose, onSubmit, isEditable =
                     style={[styles.keyButton, item === "" && { backgroundColor: "transparent" }]}
                     onPress={() => {
                       if (item === "←") {
-                        handleDelete();
+                        handleDelete()
                       } else if (item !== "") {
-                        handlePress(item);
+                        handlePress(item)
                       }
                     }}
                     disabled={item === ""}
@@ -160,7 +160,7 @@ export default function PasswordModal({ visible, onClose, onSubmit, isEditable =
         </View>
       </View>
     </Modal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -222,4 +222,4 @@ const styles = StyleSheet.create({
     color: "#aaa",
     fontSize: 16,
   },
-});
+})

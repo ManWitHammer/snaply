@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react"
-import useStore from "@/state/store"
+import useStore, { INotification } from "@/state/store"
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ViewStyle, Dimensions, Pressable } from "react-native"
-import Feather from "react-native-vector-icons/Feather"
+import Feather from "@expo/vector-icons/Feather"
 import NotFound from "assets/not-found"
 import { useRouter } from "expo-router"
 import { Image } from "expo-image"
 
 type InApiErrorProps = {
     style?: ViewStyle
-}
-
-export interface INotification {
-    avatar: string | null
-    name: string
-    surname: string
-    content: string
-    path?: string
 }
 
 export default function InApiError({ style }: InApiErrorProps) {
@@ -139,7 +131,7 @@ export default function InApiError({ style }: InApiErrorProps) {
                             <Image
                                 source={{ uri: notification.avatar }}
                                 style={styles.avatar}
-                                placeholder={{ blurhash: notification.avatar.split("?")[1] }}
+                                placeholder={{ blurhash: new URL(notification.avatar).search.slice(1) }}
                             />
                         ) : (
                             <NotFound width={40} height={40}/>

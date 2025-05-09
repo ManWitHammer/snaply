@@ -3,7 +3,7 @@
     "name": "Snaply",
     "slug": "snaply",
     "description": "Социальная сеть",
-    "version": "1.0.1",
+    "version": "0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -45,8 +45,11 @@
       "softwareKeyboardLayoutMode": "pan",
       "package": "org.manwithammer.snaply",
       "permissions": [
+        "android.permission.READ_MEDIA_IMAGES",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -54,18 +57,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-local-authentication"
+      "expo-local-authentication",
+      "expo-audio"
     ],
     "scheme": "snaply",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6eb812ba-07e2-4ca7-95f2-7819d8c03f70"
+        "projectId": "6429e468-9d2e-48a8-8d3c-00e0239dd468"
       }
     },
-    "owner": "manwithammer",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "owner": "manwithammer"
   }
 }

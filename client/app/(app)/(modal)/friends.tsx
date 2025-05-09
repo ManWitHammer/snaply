@@ -1,30 +1,22 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
-import CustomLeftModal from "../../components/CustomLeftModal";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Linking, Platform } from "react-native"
+import CustomLeftModal from "../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
-import useStore from "../../state/store"
-import { useAppearanceStore } from "../../state/appStore"
-import UserListItem from "../../components/UserItem";
-
-interface ISearchDto {
-  _id: string
-  nickname: string
-  name: string
-  surname: string
-  avatar: string | null
-  friends?: string[]
-}
+import useStore, { ISearchDto } from "../../state/store"
+import useAppearanceStore from "../../state/appStore"
+import UserListItem from "../../components/UserItem"
+import { Image } from "expo-image"
 
 export default function NotificationsScreen() {
   const [selectedTab, setSelectedTab] = useState("friends")
   const [users, setUsers] = useState<ISearchDto[]>([])
   const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
-  const { getFriends, getFriendRequests, getBlockedUsers, acceptFriendRequest, rejectFriendRequest } = useStore()
+  const { getFriends, getFriendRequests, acceptFriendRequest, rejectFriendRequest } = useStore()
   const { getGradient } = useAppearanceStore()
-  const activeColors = getGradient();
+  const activeColors = getGradient()
 
   useEffect(() => {
     setUsers([])
@@ -33,62 +25,82 @@ export default function NotificationsScreen() {
   }, [selectedTab])
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers()
   }, [page])
 
+  const openYoutube = (videoId: string) => {
+    const url = Platform.select({
+      ios: `vnd.youtube://watch?v=${videoId}`,
+      android: `vnd.youtube://watch?v=${videoId}`,
+      default: `https://www.youtube.com/watch?v=${videoId}`,
+    });
+
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
+      }
+    });
+  };
+
   const fetchUsers = async () => {
-    if (!hasMore && page !== 1) return;
+    if (!hasMore && page !== 1) return
   
-    setLoading(true);
+    setLoading(true)
     try {
-      let response: { hasMore: boolean, data: ISearchDto[] } = { hasMore: false, data: [] };
+      let response: { hasMore: boolean, data: ISearchDto[] } = { hasMore: false, data: [] }
   
       switch (selectedTab) {
         case "friends":
-          response = await getFriends(page);
-          break;
+          response = await getFriends(page)
+          break
         case "requests":
-          response = await getFriendRequests(page);
-          break;
-        case "blocked":
-          response = await getBlockedUsers(page);
-          break;
+          response = await getFriendRequests(page)
+          break
       }
   
-      setUsers(prev => (page === 1 ? response.data : [...prev, ...response.data]));
-      setHasMore(response.hasMore);
+      setUsers(prev => (page === 1 ? response.data : [...prev, ...response.data]))
+      setHasMore(response.hasMore)
     } catch (err) {
-      console.error(err);
+      console.error(err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   const handleAccept = async (userId: string) => {
     console.log(userId)
-    const success = await acceptFriendRequest(userId);
+    const success = await acceptFriendRequest(userId)
     if (success) {
-      setUsers(users.filter(user => user._id !== userId));
+      setUsers(users.filter(user => user._id !== userId))
     }
-  };
+  }
 
   const handleReject = async (userId: string) => {
     console.log(userId)
-    const success = await rejectFriendRequest(userId);
+    const success = await rejectFriendRequest(userId)
     if (success) {
-      setUsers(users.filter(user => user._id !== userId));
+      setUsers(users.filter(user => user._id !== userId))
     }
   }
 
   return (
     <CustomLeftModal title="Друзья">
       <LinearGradient colors={activeColors} style={styles.container}>
+        <TouchableOpacity style={{ alignItems: "center" }} onPress={() => openYoutube('dQw4w9WgXcQ')}>
+          <Image
+            source={{ uri: "https://cdn.minecraftrating.ru/storage/servers/21897/2189740453586.gif" }}
+            style={{width: "95%", height: 40, borderRadius: 5, marginBottom: 10}}
+            placeholder={{ blurhash: "L1DY6Eo2A=,Y1^sUjtWp1]N[]9N^" }}
+          />
+        </TouchableOpacity>
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, selectedTab === "friends" && styles.activeTab]}
             onPress={() => {
-              setSelectedTab("friends");
-              setPage(1);
+              setSelectedTab("friends")
+              setPage(1)
             }}
           >
             <Text
@@ -103,8 +115,8 @@ export default function NotificationsScreen() {
           <TouchableOpacity
             style={[styles.tab, selectedTab === "requests" && styles.activeTab]}
             onPress={() => {
-              setSelectedTab("requests");
-              setPage(1);
+              setSelectedTab("requests")
+              setPage(1)
             }}
           >
             <Text
@@ -114,22 +126,6 @@ export default function NotificationsScreen() {
               ]}
             >
               Запросы
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, selectedTab === "blocked" && styles.activeTab]}
-            onPress={() => {
-              setSelectedTab("blocked");
-              setPage(1);
-            }}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                selectedTab === "blocked" && styles.activeTabText,
-              ]}
-            >
-              Блоки
             </Text>
           </TouchableOpacity>
         </View>
@@ -151,7 +147,7 @@ export default function NotificationsScreen() {
             keyExtractor={(item) => item._id.toString()}
             onEndReached={() => {
               if (hasMore && !loading) {
-                setPage(prev => prev + 1);
+                setPage(prev => prev + 1)
               }
             }}
             onEndReachedThreshold={0.5}
@@ -160,7 +156,7 @@ export default function NotificationsScreen() {
                 {selectedTab === "friends" && (
                   <>
                     <Ionicons name="people-outline" size={50} color="#fff" style={{ marginBottom: 10 }} />
-                    <Text style={{ color: '#fff', fontSize: 16 }}>У вас пока нет друзей</Text>
+                    <Text style={{ color: '#fff', fontSize: 16 }}>У вас пока нет друзей, ну в приложении пока нет, надеюсь вы поняли это сразу</Text>
                   </>
                 )}
                 {selectedTab === "requests" && (
@@ -169,19 +165,13 @@ export default function NotificationsScreen() {
                     <Text style={{ color: '#fff', fontSize: 16 }}>Заявок пока нет</Text>
                   </>
                 )}
-                {selectedTab === "blocked" && (
-                  <>
-                    <Ionicons name="ban-outline" size={50} color="#fff" style={{ marginBottom: 10 }} />
-                    <Text style={{ color: '#fff', fontSize: 16 }}>Список блокировок пуст</Text>
-                  </>
-                )}
               </View>
             }
           />
         )}
       </LinearGradient>
     </CustomLeftModal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({

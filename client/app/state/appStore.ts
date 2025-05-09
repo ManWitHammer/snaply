@@ -1,4 +1,3 @@
-// store/useAppearanceStore.ts
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient as blueTheme } from '../styles/blue-theme'
@@ -48,9 +47,10 @@ interface AppearanceState {
   setInsertLastEmoji: (insert: boolean) => void
   setMusicEnabled: (enabled: boolean) => void
   setConfetti: (enable: boolean) => void
+  cleanAll: () => void
 }
 
-export const useAppearanceStore = create<AppearanceState>((set, get) => {
+const useAppearanceStore = create<AppearanceState>((set, get) => {
   const loadInitialState = async () => {
     try {
       const storedLocalLogin = await AsyncStorage.getItem('localLogin')
@@ -165,6 +165,20 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => {
     setConfetti: (enable) => {
       AsyncStorage.setItem('confetti', enable ? 'true' : 'false')
       set({ confetti: enable })
+    },
+
+    cleanAll: () => {
+      set({
+        showTabText: true,
+        passwordHash: null,
+        localLogin: false,
+        biometricLogin: false,
+        insertLastEmoji: false,
+        musicEnabled: false,
+        confetti: false,
+      })
     }
   }
 })
+
+export default useAppearanceStore

@@ -1,8 +1,9 @@
-import { StyleSheet, Text, TextInput, View, TouchableOpacity, Dimensions } from 'react-native'
-import Ionicons from 'react-native-vector-icons/Ionicons'
+import { StyleSheet, TextInput, View, TouchableOpacity, Dimensions } from 'react-native'
+import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 interface CustomInputProps {
-  icon: string
+  icon: keyof typeof Ionicons.glyphMap
   value: string
   placeholder: string
   onChangeText: (text: string) => void
@@ -27,7 +28,7 @@ function CustomInput({
   return (
     <View style={[
       styles.container,
-      halfInput && { width: Dimensions.get('window').width / 2 - 45.5 }
+      halfInput && { width: Dimensions.get('window').width / 2 - 25, marginBottom: 4 }
     ]}>
       <View style={styles.inputContainer}>
         <Ionicons name={icon} size={20} color="#fff" />
@@ -46,7 +47,15 @@ function CustomInput({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Animated.Text 
+          entering={FadeInDown} 
+          exiting={FadeOutDown} 
+          style={styles.error}
+        >
+          {error}
+        </Animated.Text>
+      )}
     </View>
   )
 }
@@ -75,7 +84,7 @@ const styles = StyleSheet.create({
   error: {
     color: 'red',
     marginTop: 4,
-  },
+  }
 })
 
 export default CustomInput

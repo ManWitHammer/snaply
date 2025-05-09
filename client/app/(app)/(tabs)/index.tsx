@@ -1,18 +1,16 @@
 import { Stack } from "expo-router"
 import { StyleSheet, FlatList, ActivityIndicator } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import { useCameraPermissions } from 'expo-camera'
 import * as MediaLibrary from 'expo-media-library'
 import CustomHeader from "../../components/CustomHeader"
 import { useEffect, useState } from "react"
 import useStore from "../../state/store"
-import { usePostsStore } from "../../state/postsStore"
+import usePostsStore from "../../state/postsStore"
 import PostItem from "../../components/PostItem"
-import { useAppearanceStore } from "../../state/appStore";
+import useAppearanceStore from "../../state/appStore";
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 export default function HomeScreen() {
-  const [permission, requestPermission] = useCameraPermissions()
   const { posts, loading, fetchPosts, likePost, deletePost } = usePostsStore()
   const { user } = useStore()
   const [refreshing, setRefreshing] = useState(false)
@@ -23,9 +21,6 @@ export default function HomeScreen() {
   useEffect(() => {
     const getPermissions = async () => {
       const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync()
-      if (!permission?.granted) {
-        requestPermission()
-      }
       if (mediaStatus !== 'granted') {
         console.log('Media permission denied')
       }

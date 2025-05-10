@@ -49,11 +49,10 @@ export default function PhotosScreen() {
             <Image
               source={{ uri: item }}
               style={styles.photo}
-              placeholder={{ blurhash: new URL(item).search.slice(1) }}
+              placeholder={item.startsWith('http') ? { blurhash: new URL(item).search.slice(1) } : undefined}
             />
         </TouchableOpacity>
     )
-
    return (
       <CustomLeftModal title={`Все фото (${total})`}>
         <LinearGradient colors={activeColors} style={styles.container}>

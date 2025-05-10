@@ -131,7 +131,7 @@ export default function InApiError({ style }: InApiErrorProps) {
                             <Image
                                 source={{ uri: notification.avatar }}
                                 style={styles.avatar}
-                                placeholder={{ blurhash: new URL(notification.avatar).search.slice(1) }}
+                                placeholder={ notification.avatar.startsWith('http') ? { blurhash: new URL(notification.avatar).search.slice(1) } : undefined}
                             />
                         ) : (
                             <NotFound width={40} height={40}/>

@@ -55,13 +55,13 @@ const CommentsSheet = ({
                   <Image
                     source={{ uri: item.userId.avatar }}
                     style={styles.commentAvatar}
-                    placeholder={{ blurhash: new URL(item.userId.avatar).search.slice(1) }}
+                    placeholder={ item.userId.avatar.startsWith('http') ? { blurhash: new URL(item.userId.avatar).search.slice(1) } : undefined}
                   />
                 ) : (
                   <NotFound width={40} height={40} />
                 )}
                 <View style={styles.commentTextContainer}>
-                  <Text style={styles.commentAuthor}>
+                  <Text style={styles.commentAuthor} numberOfLines={1}>
                     {item.userId.name} {item.userId.surname}
                   </Text>
                   <Text style={styles.commentText}>{item.text}</Text>

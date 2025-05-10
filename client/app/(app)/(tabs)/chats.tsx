@@ -36,7 +36,7 @@ export default function ChatScreen() {
         <Image 
           source={{ uri: item.participant.avatar }} 
           style={styles.avatar} 
-          placeholder={{ blurhash: new URL(item.participant.avatar).search.slice(1) }}
+          placeholder={ item.participant.avatar.startsWith('http') ? { blurhash: new URL(item.participant.avatar).search.slice(1) } : undefined}
         />
       ) : (
         <View style={styles.avatarPlaceholder}>
@@ -45,7 +45,7 @@ export default function ChatScreen() {
       )}
       
       <View style={styles.chatInfo}>
-        <Text style={styles.chatName}>
+        <Text style={styles.chatName} numberOfLines={1}>
           {item.participant?.name} {item.participant?.surname}
         </Text>
         
@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
+    paddingRight: 10,
   },
   lastMessage: {
     color: 'rgba(255, 255, 255, 0.7)',

@@ -60,7 +60,7 @@ export default function MenuScreen() {
                             <Image 
                                 source={{ uri: user.avatar }} 
                                 style={styles.avatarImage} 
-                                placeholder={{ blurhash: new URL(user.avatar).search.slice(1) }}
+                                placeholder={ user.avatar.startsWith('http') ? { blurhash: new URL(user.avatar).search.slice(1) } : undefined}
                             />
                         </View>
                     ) : <NotFound />}
@@ -135,7 +135,7 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 20, backgroundColor: "#fff" },
     profileContainer: { alignItems: "center", marginBottom: 20 },
-    profileName: { fontSize: 18, fontWeight: "bold", marginTop: 5, color: "#fff" },
+    profileName: { fontSize: 18, fontWeight: "bold", marginTop: 5, color: "#fff", textAlign: "center" },
     button: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
     buttonText: { marginLeft: 10, fontSize: 16, color: "#fff" },
     divider: { height: 1, backgroundColor: "#ddd", marginVertical: 20 },
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      },
-      modalContent: {
+    },
+    modalContent: {
         width: '80%',
         backgroundColor: 'white',
         padding: 20,
@@ -167,20 +167,20 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 2 },
         elevation: 5, 
-      },
-      modalTitle: {
+    },
+    modalTitle: {
         textAlign: 'center',
         fontSize: 20,
         fontWeight: 'bold',
         color: 'white',
         marginBottom: 10,
-      },
-      modalMessage: {
+    },
+    modalMessage: {
         fontSize: 16,
         marginBottom: 20,
         textAlign: 'center',
         color: 'white',
-      },
+    },
       modalButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         marginHorizontal: 5,
         borderRadius: 5,
-        backgroundColor: '#007AFF', // Standard iOS blue
+        backgroundColor: '#007AFF', 
         justifyContent: 'center',
         alignItems: 'center',
       },
@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
       },
       modalButtonDanger: {
-        backgroundColor: '#FF3B30', // iOS red color for destructive action
+        backgroundColor: '#FF3B30', 
       },
-    
 })

@@ -110,7 +110,7 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
                 <Image 
                   source={{ uri: item.participant.avatar } }
                   style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
-                  placeholder={{ blurhash: new URL(item.participant.avatar).search.slice(1) }}
+                  placeholder={ item.participant.avatar.startsWith('http') ? { blurhash: new URL(item.participant.avatar).search.slice(1) } : undefined}
                 />
               ) : (
                 <View

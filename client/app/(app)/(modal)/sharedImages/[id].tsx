@@ -49,7 +49,7 @@ export default function SharedImagesScreen() {
             <Image
               source={{ uri: item }}
               style={styles.photo}
-              placeholder={{ blurhash: new URL(item).search.slice(1) }}
+              placeholder={ item.startsWith('http') ? { blurhash: new URL(item).search.slice(1) } : undefined}
             />
         </TouchableOpacity>
     )

@@ -618,7 +618,7 @@ export default function ChatScreen() {
                     <Image 
                       source={{ uri: selectedImage.uri }} 
                       style={styles.imagePreview} 
-                      placeholder={{ blurhash: new URL(selectedImage.uri).search.slice(1) }}
+                      placeholder={selectedImage.uri.startsWith('http') ? { blurhash: new URL(selectedImage.uri).search.slice(1) } : undefined}
                     />
                     <TouchableOpacity 
                       style={[styles.removeImageButton, { backgroundColor: activeColors[1] }]}

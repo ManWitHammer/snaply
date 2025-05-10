@@ -392,14 +392,13 @@ export default function ProfileModal() {
                         <Image 
                           source={{ uri: userData.user.avatar }} 
                           style={[styles.avatarImage, { borderColor: activeColors[0] }]} 
-                          placeholder={{ blurhash: new URL(userData.user.avatar).search.slice(1)}}
+                          placeholder={ userData.user.avatar.startsWith('http') ? { blurhash: new URL(userData.user.avatar).search.slice(1) } : undefined}
                         />
                         {uploading && (
                           <View style={styles.loaderContainer}>
                             <ActivityIndicator size="large" color="#fff" />
                           </View>
                         )}
-                        {/* Индикатор статуса */}
                         <View style={[
                           styles.statusIndicator,
                           userData?.user.status === 'online' ? {...styles.online, borderColor: activeColors[0] } : {...styles.offline, borderColor: activeColors[0] }
@@ -408,7 +407,6 @@ export default function ProfileModal() {
                     ) : (
                       <View style={[styles.imageContainer, { backgroundColor: activeColors[0] }]}>
                         <NotFound width={100} height={100}/>
-                        {/* Индикатор статуса для дефолтного аватара */}
                         <View style={[
                           styles.statusIndicator,
                           userData?.user.status === 'online' ? {...styles.online, borderColor: activeColors[0] } : {...styles.offline, borderColor: activeColors[0] }
@@ -521,7 +519,7 @@ export default function ProfileModal() {
                             <Image
                               source={{ uri: friend.avatar }}
                               style={[styles.friendAvatar, { borderColor: activeColors[1] }]}
-                              placeholder={{ blurhash: new URL(friend.avatar).search.slice(1) }}
+                              placeholder={ friend.avatar.startsWith('http') ? { blurhash: new URL(friend.avatar).search.slice(1) } : undefined}
                             />
                           ) : (
                             <Ionicons name="person-circle-outline" size={40} color="#fff" />
@@ -559,18 +557,16 @@ export default function ProfileModal() {
                         source={{ uri: photo }} 
                         style={styles.photoItem}
                         key={photo}
-                        placeholder={{ blurhash: photo.split('?')[1] }}
+                        placeholder={ photo.startsWith('http') ? { blurhash: new URL(photo).search.slice(1) } : undefined}
                       />
                     ))}
                   </View>
-                  {userData && userData.user.sharedImages.length == 6 && (
-                    <TouchableOpacity 
-                      style={styles.viewMoreButton}
-                      onPress={() => router.push(`/sharedImages/${id}`)}
-                    >
-                      <Text style={[styles.viewMoreText, { color: activeColors[0] }]}>Посмотреть ещё</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity 
+                    style={styles.viewMoreButton}
+                    onPress={() => router.push(`/sharedImages/${id}`)}
+                  >
+                    <Text style={[styles.viewMoreText, { color: activeColors[0] }]}>Посмотреть всё</Text>
+                  </TouchableOpacity>
                 </View>
               )}
         
@@ -589,19 +585,17 @@ export default function ProfileModal() {
                             source={{ uri: photo }} 
                             style={styles.photoItem}
                             key={photo}
-                            placeholder={{ blurhash: photo.split('?')[1] }}
+                            placeholder={ photo.startsWith('http') ? { blurhash: new URL(photo).search.slice(1) } : undefined}
                           />
                       ))}
                     </View>
                     
-                    {userData && userData.user.photos.length == 6 && (
-                      <TouchableOpacity 
-                        style={styles.viewMoreButton}
-                        onPress={() => router.push(`/photos/${id}`)}
-                      >
-                        <Text style={[styles.viewMoreText, { color: activeColors[0] }]}>Посмотреть ещё</Text>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity 
+                      style={styles.viewMoreButton}
+                      onPress={() => router.push(`/photos/${id}`)}
+                    >
+                      <Text style={[styles.viewMoreText, { color: activeColors[0] }]}>Посмотреть всё</Text>
+                    </TouchableOpacity>
                   </>
                 ) : user && id == user.id ? (
                   <View style={{flex: 1, alignItems: "center", justifyContent: "center"}}>
@@ -867,7 +861,7 @@ const styles = StyleSheet.create({
     paddingTop: 45,
     marginBottom: 10
   },
-  profileName: { color: "#fff", fontSize: 22, fontWeight: "bold", marginTop: 10 },
+  profileName: { color: "#fff", fontSize: 22, fontWeight: "bold", marginTop: 10, textAlign: "center" },
   profileDesc: { color: "#DCDCDC", fontSize: 14, marginTop: 5 },
   publishButton: {
     flexDirection: 'row',

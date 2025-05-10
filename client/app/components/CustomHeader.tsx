@@ -66,9 +66,9 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
         <TouchableOpacity onPress={() => router.push(`/profile/${user?.id}`)} style={styles.button}>
           {user?.avatar ? (
             <Image 
-              source={{ uri: `${user.avatar}` }} 
+              source={{ uri: user.avatar }} 
               style={styles.avatar} 
-              placeholder={{ blurhash: new URL(user.avatar).search.slice(1) }}
+              placeholder={ user.avatar.startsWith('http') ? { blurhash: new URL(user.avatar).search.slice(1) } : undefined}
             />
           ) : (
             <Ionicons name="person-circle-outline" size={30} color="#fff" />
@@ -91,7 +91,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
             <View style={[styles.statusIndicator, { backgroundColor: accountInfo.status === 'online' ? '#4CAF50' : '#757575' }]} />
           </View>
           <View>
-            <Text style={styles.accountName}>{accountInfo.name} {accountInfo.surname}</Text>
+            <Text style={styles.accountName} numberOfLines={1}>{accountInfo.name} {accountInfo.surname}</Text>
             <Text style={styles.statusText}>
               {accountInfo.typing ? 'печатает...' : accountInfo.status === 'online' ? 'В сети' : 'Не в сети'}
             </Text>
@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    paddingRight: 50,
   },
   avatarContainer: {
     position: 'relative',
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
   accountName: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   statusText: {
     color: "#E0E0E0",

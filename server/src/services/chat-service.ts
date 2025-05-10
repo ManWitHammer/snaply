@@ -199,16 +199,15 @@ class ChatService {
         if (replyTo && !chat.messages.find(m => (m._id as Types.ObjectId).toString() === replyTo)) {
             throw ApiError.BadRequest('Сообщение для ответа не найдено')
         }
-    
-        const userMessage: any = {
-            sender: userId,
-            content: message || '',
-            image: imageFromMessage ? imageFromMessage : imageUrl,
-            timestamp: new Date(),
-            ...(forwardedFromUser && { forwardedFromUser }),
-            ...(forwardedFromPost && { forwardedFromPost }),
-            ...(replyTo && { replyTo }),
-        }
+              const userMessage: any = {
+                  sender: userId,
+                  content: message || '',
+                  image: imageFromMessage && imageFromMessage.startsWith('http') ? imageFromMessage : imageUrl,
+                  timestamp: new Date(),
+                  ...(forwardedFromUser && { forwardedFromUser }),
+                  ...(forwardedFromPost && { forwardedFromPost }),
+                  ...(replyTo && { replyTo }),
+              }
     
         const newChat = await ChatModel.findByIdAndUpdate(
             chatId,

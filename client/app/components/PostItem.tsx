@@ -145,12 +145,12 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
             <Image 
               source={{ uri: post.author.avatar }} 
               style={styles.avatar} 
-              placeholder={{ blurhash: new URL(post.author.avatar).search.slice(1)}}
+              placeholder={ post.author.avatar.startsWith('http') ? { blurhash: new URL(post.author.avatar).search.slice(1) } : undefined}
             />
           ) : <NotFound width={40} height={40}/>}
           
           <View style={styles.authorInfo}>
-            <Text style={styles.authorName}>{post.author.name} {post.author.surname}{post.aiGenerated && " <-- 🤖"}</Text>
+            <Text style={styles.authorName} numberOfLines={1}>{post.author.name} {post.author.surname}{post.aiGenerated && " <-- 🤖"}</Text>
             <Text style={styles.postTime}>
               {formatPostTime(post.createdAt)}
             </Text>
@@ -251,7 +251,7 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
                     <Image 
                         source={{ uri: item }} 
                         style={styles.postImage} 
-                        placeholder={{ blurhash: new URL(item).search.slice(1) }}
+                        placeholder={ item.startsWith('http') ? { blurhash: new URL(item).search.slice(1) } : undefined}
                         contentFit="cover"
                     />
                 </TouchableOpacity>

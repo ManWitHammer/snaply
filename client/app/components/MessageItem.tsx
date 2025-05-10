@@ -1,10 +1,11 @@
 import React from 'react'
-import { View, Text, Pressable, Image, StyleSheet } from 'react-native'
+import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { format, parseISO } from 'date-fns'
 import FormattedText from './FormattedText'
 import { ChatMessage } from '../state/chatsStore'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
+import { Image } from 'expo-image'
 
 interface MessageItemProps {
   item: ChatMessage
@@ -56,9 +57,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
                   <Image
                     source={{ uri: item.forwardedFromPost.author.avatar }}
                     style={styles.forwardedAvatar}
+                    placeholder={ item.forwardedFromPost.author.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromPost.author.avatar).search.slice(1) } : undefined}
                   />
                 )}
-                <Text style={styles.forwardedAuthorName}>
+                <Text style={styles.forwardedAuthorName} numberOfLines={1}>
                   {item.forwardedFromPost.author.name} {item.forwardedFromPost.author.surname}
                 </Text>
               </View>
@@ -77,13 +79,14 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
                 <Text style={styles.forwardedText}>Переслано от пользователя</Text>
               </View>
               <View style={styles.forwardedAuthor}>
-                {item.forwardedFromUser.avatar && (
+                {item.forwardedFromUser.avatar ? (
                   <Image
                     source={{ uri: item.forwardedFromUser.avatar }}
                     style={styles.forwardedAvatar}
+                    placeholder={ item.forwardedFromUser.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromUser.avatar).search.slice(1) } : undefined}
                   />
-                )}
-                <Text style={styles.forwardedAuthorName}>
+                ) : <Ionicons name="person-circle-outline" size={32} color="#888" />}
+                <Text style={styles.forwardedAuthorName} numberOfLines={1}>
                   {item.forwardedFromUser.name} {item.forwardedFromUser.surname}
                 </Text>
               </View>
@@ -226,9 +229,10 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     forwardedAuthorName: {
-        color: '#555',
-        fontSize: 14,
-        fontWeight: '500',
+      color: '#555',
+      fontSize: 14,
+      fontWeight: '500',
+      paddingRight: 55
     },
     statusIcon: {
         fontSize: 12,

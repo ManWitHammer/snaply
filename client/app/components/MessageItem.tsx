@@ -22,104 +22,106 @@ const MessageItem: React.FC<MessageItemProps> = ({ item, handleLongPress, setSho
   >
     {({ pressed }) => (
       <>
-        <Animated.View
-          entering={FadeInDown} 
-          exiting={FadeOutDown}
-          style={[
-            styles.messageContainer,
-            item.isOwnMessage
-              ? { ...styles.myMessageContainer, backgroundColor: commentColor }
-              : styles.theirMessageContainer,
-            item.isTemp && { opacity: 0.7 },
-            pressed && { opacity: 0.8 },
-            { transform: [{ scale: pressed ? 0.98 : 1 }] }
-          ]}
-        >
-          {!item.isOwnMessage && (
-            <Text style={styles.senderName}>
-              {item.sender.name} {item.sender.surname}
-            </Text>
-          )}
-
-          {item.forwardedFromPost && (
-            <View
-              style={[
-                styles.forwardedContainer,
-                item.isOwnMessage ? styles.myForwardedContainer : styles.theirForwardedContainer
-              ]}
-            >
-              <View style={styles.forwardedHeader}>
-                <Ionicons name="arrow-redo" size={16} color="#888" />
-                <Text style={styles.forwardedText}>Переслано из поста</Text>
-              </View>
-              <View style={styles.forwardedAuthor}>
-                {item.forwardedFromPost.author.avatar && (
-                  <Image
-                    source={{ uri: item.forwardedFromPost.author.avatar }}
-                    style={styles.forwardedAvatar}
-                    placeholder={ item.forwardedFromPost.author.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromPost.author.avatar).search.slice(1) } : undefined}
-                  />
-                )}
-                <Text style={styles.forwardedAuthorName} numberOfLines={1}>
-                  {item.forwardedFromPost.author.name} {item.forwardedFromPost.author.surname}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {item.forwardedFromUser && (
-            <View
-              style={[
-                styles.forwardedContainer,
-                item.isOwnMessage ? styles.myForwardedContainer : styles.theirForwardedContainer
-              ]}
-            >
-              <View style={styles.forwardedHeader}>
-                <Ionicons name="arrow-redo" size={16} color="#888" />
-                <Text style={styles.forwardedText}>Переслано от пользователя</Text>
-              </View>
-              <View style={styles.forwardedAuthor}>
-                {item.forwardedFromUser.avatar ? (
-                  <Image
-                    source={{ uri: item.forwardedFromUser.avatar }}
-                    style={styles.forwardedAvatar}
-                    placeholder={ item.forwardedFromUser.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromUser.avatar).search.slice(1) } : undefined}
-                  />
-                ) : <Ionicons name="person-circle-outline" size={32} color="#888" />}
-                <Text style={styles.forwardedAuthorName} numberOfLines={1}>
-                  {item.forwardedFromUser.name} {item.forwardedFromUser.surname}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.messageContentWrapper}>
-            <FormattedText
-              style={item.isOwnMessage ? styles.myMessageContent : styles.theirMessageContent}
-              text={item.content}
-              isPressable
-              color={item.isOwnMessage ? '#fff' : 'black'}
-            />
-            <View style={styles.messageFooter}>
-              <Text style={item.isOwnMessage ? styles.myMessageTime : styles.theirMessageTime}>
-                {format(parseISO(item.timestamp), 'HH:mm')}
+        {item.content && (
+          <Animated.View
+            entering={FadeInDown} 
+            exiting={FadeOutDown}
+            style={[
+              styles.messageContainer,
+              item.isOwnMessage
+                ? { ...styles.myMessageContainer, backgroundColor: commentColor }
+                : styles.theirMessageContainer,
+              item.isTemp && { opacity: 0.7 },
+              pressed && { opacity: 0.8 },
+              { transform: [{ scale: pressed ? 0.98 : 1 }] }
+            ]}
+          >
+            {!item.isOwnMessage && (
+              <Text style={styles.senderName}>
+                {item.sender.name} {item.sender.surname}
               </Text>
-              {item.isEdited && (
-                <Text
-                  style={[
-                    item.isOwnMessage ? styles.myMessageTime : styles.theirMessageTime,
-                    { fontStyle: 'italic', marginRight: 4 }
-                  ]}
-                >
-                  (ред.)
+            )}
+
+            {item.forwardedFromPost && (
+              <View
+                style={[
+                  styles.forwardedContainer,
+                  item.isOwnMessage ? styles.myForwardedContainer : styles.theirForwardedContainer
+                ]}
+              >
+                <View style={styles.forwardedHeader}>
+                  <Ionicons name="arrow-redo" size={16} color="#888" />
+                  <Text style={styles.forwardedText}>Переслано из поста</Text>
+                </View>
+                <View style={styles.forwardedAuthor}>
+                  {item.forwardedFromPost.author.avatar && (
+                    <Image
+                      source={{ uri: item.forwardedFromPost.author.avatar }}
+                      style={styles.forwardedAvatar}
+                      placeholder={ item.forwardedFromPost.author.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromPost.author.avatar).search.slice(1) } : undefined}
+                    />
+                  )}
+                  <Text style={styles.forwardedAuthorName} numberOfLines={1}>
+                    {item.forwardedFromPost.author.name} {item.forwardedFromPost.author.surname}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {item.forwardedFromUser && (
+              <View
+                style={[
+                  styles.forwardedContainer,
+                  item.isOwnMessage ? styles.myForwardedContainer : styles.theirForwardedContainer
+                ]}
+              >
+                <View style={styles.forwardedHeader}>
+                  <Ionicons name="arrow-redo" size={16} color="#888" />
+                  <Text style={styles.forwardedText}>Переслано от пользователя</Text>
+                </View>
+                <View style={styles.forwardedAuthor}>
+                  {item.forwardedFromUser.avatar ? (
+                    <Image
+                      source={{ uri: item.forwardedFromUser.avatar }}
+                      style={styles.forwardedAvatar}
+                      placeholder={ item.forwardedFromUser.avatar.startsWith('http') ? { blurhash: new URL(item.forwardedFromUser.avatar).search.slice(1) } : undefined}
+                    />
+                  ) : <Ionicons name="person-circle-outline" size={32} color="#888" />}
+                  <Text style={styles.forwardedAuthorName} numberOfLines={1}>
+                    {item.forwardedFromUser.name} {item.forwardedFromUser.surname}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.messageContentWrapper}>
+              <FormattedText
+                style={item.isOwnMessage ? styles.myMessageContent : styles.theirMessageContent}
+                text={item.content}
+                isPressable
+                color={item.isOwnMessage ? '#fff' : 'black'}
+              />
+              <View style={styles.messageFooter}>
+                <Text style={item.isOwnMessage ? styles.myMessageTime : styles.theirMessageTime}>
+                  {format(parseISO(item.timestamp), 'HH:mm')}
                 </Text>
-              )}
-              {item.isOwnMessage && !item.isTemp && (
-                <Text style={styles.statusIcon}>✓</Text>
-              )}
+                {item.isEdited && (
+                  <Text
+                    style={[
+                      item.isOwnMessage ? styles.myMessageTime : styles.theirMessageTime,
+                      { fontStyle: 'italic', marginRight: 4 }
+                    ]}
+                  >
+                    (ред.)
+                  </Text>
+                )}
+                {item.isOwnMessage && !item.isTemp && (
+                  <Text style={styles.statusIcon}>✓</Text>
+                )}
+              </View>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        )}
 
         {(item.image || (item.forwardedFromPost && item.forwardedFromPost?.images?.length > 0)) && (
           <Animated.Image

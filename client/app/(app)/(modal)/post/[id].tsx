@@ -148,7 +148,8 @@ export default function PostScreen() {
           enabled={keyboardVisible}
         >
           <ScrollView 
-            contentContainerStyle={styles.container}
+            style={styles.container}
+            contentContainerStyle={{flexGrow: 1}}
             keyboardShouldPersistTaps="handled"
           >
             <PostItem 
@@ -238,7 +239,7 @@ export default function PostScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingBottom: 50
   },
   commentsContainer: {

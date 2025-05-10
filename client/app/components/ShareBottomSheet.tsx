@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { View, Text, Share, TouchableOpacity, Alert } from 'react-native'
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet'
 import NotFound from '../../assets/not-found'
 import useChatsStore, { Chat, ChatMessage, ChatParticipant } from '../state/chatsStore'
 import { Post } from '../state/postsStore'
 import useAppearanceStore from '../state/appStore'
 import { useRouter } from "expo-router"
 import { Image } from "expo-image"
+import Ionicons from '@expo/vector-icons/Ionicons'
 
 interface ShareBottomSheetProps {
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>
@@ -24,11 +25,33 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
   const router = useRouter()
   const { getGradient } = useAppearanceStore() 
   const activeColors = getGradient()
-  const snapPoints = useMemo(() => ['40%', "60%"], [])
-  const { fetchChats, chats, loading, sendMessage } = useChatsStore()
+  const snapPoints = useMemo(() => ['40%'], [])
+  const { sendMessage, chats, fetchChats } = useChatsStore()
   const [localLoading, setLocalLoading] = useState(false)
   const [localChats, setLocalChats] = useState<Chat[]>([])
-    
+
+  useEffect(() => {
+    const loadChats = async () => {
+      setLocalChats(chats)
+      const fetchedChats = await fetchChats()
+      setLocalChats(fetchedChats)
+    }
+
+    loadChats()
+  }, [fetchChats])
+
+  const onShare = async () => {
+    try {
+      const content = selectedMessage ? selectedMessage.content : 
+        selectedPost ? selectedPost.content : 'Привет😘'
+      await Share.share({
+        message: content,
+      })
+    } catch (error: any) {
+      Alert.alert(error.message);
+    }
+  }
+
   const handleShareToChat = async (chatId: string) => {
     try {
       if (!selectedMessage && !selectedPost) return
@@ -40,7 +63,9 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
         const message = selectedMessage.content
         const image = selectedMessage.image
         formData.append('message', message)
-        formData.append('imageFromMessage', image)
+        if (image) {
+          formData.append('imageFromMessage', image)
+        }
         formData.append("forwardedFromUser", otherParticipant._id)
       }
 
@@ -63,24 +88,14 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
     } finally {
       setLocalLoading(false)
     }
-  }    
-    
-  useEffect(() => {
-    const loadChats = async () => {
-      setLocalChats(chats)
-      const fetchedChats = await fetchChats()
-      setLocalChats(fetchedChats)
-    }
-
-    loadChats()
-  }, [fetchChats])
-
+  }
   return (
     <BottomSheetModal
       ref={bottomSheetModalRef}
       index={0}
+      enableDynamicSizing={false}
       snapPoints={snapPoints}
-      backgroundStyle={{ backgroundColor: activeColors[0] }}
+      backgroundStyle={{ backgroundColor: activeColors[0], width: "100%" }}
       backdropComponent={(props) => (
         <BottomSheetBackdrop
           {...props}
@@ -90,58 +105,81 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
       )}
       handleIndicatorStyle={{ backgroundColor: 'white' }}
     >
-      <BottomSheetView style={{ flex: 1, padding: 16 }}>
-        <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
-          Поделиться постом
+        <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 16, marginLeft: 16 }}>
+          Поделиться
         </Text>
-
-        {/* Секция с чатами */}
-        <Text style={{ color: 'white', marginBottom: 8 }}>Мои чаты</Text>
-        <FlatList
-          data={localChats}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
+            Выберите чат
+          </Text>
+        </View>
+        <BottomSheetFlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={localChats.length == 0 ? chats : localChats}
           keyExtractor={(item) => item.chatId}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={{ padding: 12, flexDirection: 'row', alignItems: 'center' }}
+              style={{ 
+                marginHorizontal: 10, 
+                alignItems: 'center',
+                width: 80
+              }}
               onPress={() => handleShareToChat(item.chatId)}
               disabled={localLoading}
             >
               {item.participant.avatar ? (
                 <Image 
-                  source={{ uri: item.participant.avatar } }
-                  style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
+                  source={{ uri: item.participant.avatar }}
+                  style={{ width: 60, height: 60, borderRadius: 30, marginBottom: 8, backgroundColor: 'white' }}
                   placeholder={ item.participant.avatar.startsWith('http') ? { blurhash: new URL(item.participant.avatar).search.slice(1) } : undefined}
                 />
               ) : (
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    marginRight: 12,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    marginBottom: 8,
                     justifyContent: 'center',
                     alignItems: 'center'
                   }}
                 >
-                  <NotFound width={40} height={40} />
+                  <NotFound width={60} height={60} />
                 </View>
               )}
-              <Text style={{ color: 'white' }}>{item.participant.name} {item.participant.surname}</Text>
+              <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }} numberOfLines={2}>
+                {item.participant.name} {item.participant.surname}
+              </Text>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={{ color: 'white', textAlign: 'center', marginTop: 20 }}>
-                У вас нет чатов
-              </Text>
-            )
+            <Text style={{ color: 'white', textAlign: 'center', marginTop: 20 }}>
+              У вас нет чатов
+            </Text>
           }
-          style={{ maxHeight: 150, marginBottom: 20 }}
-        />
-      </BottomSheetView>
-    </BottomSheetModal>
+          style={{ maxHeight: 100 }}
+        /> 
+        <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
+            Дополнительно
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={{ 
+            marginHorizontal: 10,  
+            alignItems: 'center',
+            width: 80
+          }}
+          onPress={onShare}
+          disabled={localLoading}
+        >
+          <Ionicons name="share-social-outline" size={50} color="white" />
+          <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }} numberOfLines={2}>
+            другое
+          </Text>
+        </TouchableOpacity>
+      </BottomSheetModal>
   )
 }
 

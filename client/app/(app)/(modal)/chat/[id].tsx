@@ -39,8 +39,6 @@ interface ImageDto {
   name: string
 }
 
-// console.error
-
 export default function ChatScreen() {
   const router = useRouter()
   const { id: chatId } = useLocalSearchParams()
@@ -381,12 +379,12 @@ export default function ChatScreen() {
       return
     }
 
-    if (!inputValue.trim() && selectedImage) {
-      setErrorMessage("Для отправки сообщения введите хоть что-то")
+    if (!inputValue.trim() && !selectedImage) {
+      setErrorMessage("Добавьте сообщение или изображение")
       return
     }
 
-    if (!inputValue.trim() || sending || !user) return
+    if (sending || !user) return
 
     socket?.emit('stopTyping', { chatId, userId: user.id })
     
@@ -406,7 +404,7 @@ export default function ChatScreen() {
         surname: user.surname || "",
         avatar: user.avatar || null,
       },
-      content,
+      content: content || "",
       image: selectedImage ? selectedImage.uri : "",
       isEdited: false,
       isOwnMessage: true,
@@ -427,7 +425,7 @@ export default function ChatScreen() {
         } as any)
       }
 
-      formData.append('message', content)
+      formData.append('message', content || "")
       setSelectedImage(null)
       
       const response = await sendMessage(chatId as string, formData)
@@ -444,7 +442,7 @@ export default function ChatScreen() {
     } finally {
       setSending(false)
     }
-  }
+  }  
   useEffect(() => {
     loadMessages()
     setCurrentChatId(chatId as string)
@@ -552,14 +550,13 @@ export default function ChatScreen() {
               imageIndex={0}
               visible={!!visibleImageId}
               onRequestClose={() => setVisibleImageId(null)}
-              presentationStyle="overFullScreen"
               backgroundColor="rgb(0, 0, 0)"
               swipeToCloseEnabled
               doubleTapToZoomEnabled
             />
             <KeyboardAvoidingView
               style={{ flex: 1 }}
-              behavior={"padding"}
+              behavior={"height"}
               keyboardVerticalOffset={100}
               enabled={keyboardVisible}
             >

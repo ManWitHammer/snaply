@@ -2,13 +2,12 @@ import { Schema, Document, Types, model } from 'mongoose'
 
 export interface IMessage extends Document {
   sender: Types.ObjectId
-  content: string
+  content: string | null
   timestamp: Date
-  image?: string
+  image: string | null
   isEdited: boolean
   forwardedFromUser?: Types.ObjectId
   forwardedFromPost?: Types.ObjectId
-  replyTo?: Types.ObjectId // ID другого сообщения
 }
 
 export interface IChat extends Document {
@@ -29,7 +28,6 @@ const MessageSchema: Schema = new Schema({
   isEdited: { type: Boolean, default: false },
   forwardedFromUser: { type: Schema.Types.ObjectId, ref: 'User' },
   forwardedFromPost: { type: Schema.Types.ObjectId, ref: 'Post' },
-  replyTo: { type: Schema.Types.ObjectId }
 })
 
 const ChatSchema: Schema = new Schema({

@@ -419,7 +419,7 @@ export default function ProfileModal() {
                 <View style={[styles.profileInfo, { backgroundColor: activeColors[0] }]}>
                   <Text style={styles.profileName}>{userData?.user.name} {userData?.user.surname}</Text>
                   {userData && userData.user.description ? (
-                    <Text style={[styles.profileDesc, { color: activeColors[1] }]}>{userData?.user.description}</Text>
+                    <Text style={[styles.profileDesc, { color: activeColors[1] }]} numberOfLines={3}>{userData?.user.description}</Text>
                   ) : user && id == user.id ? (
                     <TouchableOpacity onPress={() => router.push('/account')} style={{flexDirection: "row", alignItems: "center", gap: 6}}>
                       <Text style={styles.addFriends}>Добавить информацию о себе</Text>

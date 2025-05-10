@@ -33,9 +33,9 @@ function UserListItem({ item, requests, handleAccept, handleReject }: UserListIt
         ) : (
           <NotFound width={40} height={40} />
         )}
-        <View>
-          <Text style={styles.userName}>{item.name} {item.surname}</Text>
-          <Text style={styles.userDetails}>
+        <View style={{ flex: 1, marginLeft: 10}}>
+          <Text style={styles.userName} numberOfLines={1}>{item.name} {item.surname}</Text>
+          <Text style={styles.userDetails} numberOfLines={1}>
             {item.nickname}, {item.friends ? `${item.friends.length} друзей` : ''}
           </Text>
         </View>
@@ -74,7 +74,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: "#444",
-    marginRight: 10,
   },
   userName: {
     color: "#fff",

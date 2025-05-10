@@ -51,7 +51,7 @@ class ChatService {
                     surname: (otherParticipant as unknown as IUser).surname
                 } : null,
                 lastMessage: lastMessage ? {
-                    content: lastMessage.content,
+                    content: lastMessage.content || "Отправлена картинка",
                     isOwnMessage: lastMessage.sender._id.toString() === userId.toString(),
                     timestamp: lastMessage.timestamp
                 } : null,
@@ -160,8 +160,8 @@ class ChatService {
     
         const userId = user._id as Types.ObjectId
     
-        if (!message && !image) throw ApiError.BadRequest('Текст сообщения не может быть пустым')
-        if (message && message.trim().length === 0) throw ApiError.BadRequest('Текст сообщения не может быть пустым')
+        if (!message && !image && !imageFromMessage) throw ApiError.BadRequest('Необходимо отправить сообщение или изображение')
+        if (message && message.trim().length === 0 && !image && !imageFromMessage) throw ApiError.BadRequest('Необходимо отправить сообщение или изображение')
         if (message && message.length > 2500) throw ApiError.BadRequest('Превышен лимит в 2500 символов')
     
         const chat = await ChatModel.findOne({
@@ -241,8 +241,7 @@ class ChatService {
         await SocketService.notifyNewMessage(userId.toString(), otherParticipant._id.toString(), lastMessage, chatId)
     
         return lastMessage
-    }
-    
+    }    
     async editMessage(authHeader: string, chatId: string, messageId: string, message: string) {
         if (!authHeader) throw ApiError.UnauthorizedError()
 

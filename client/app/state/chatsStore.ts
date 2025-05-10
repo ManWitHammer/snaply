@@ -14,7 +14,7 @@ export interface ChatMessage {
     _id: string
     sender: ChatParticipant
     content: string
-    image: string
+    image: string | null
     isEdited: boolean
     isOwnMessage: boolean
     timestamp: string

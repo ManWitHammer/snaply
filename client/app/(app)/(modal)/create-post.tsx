@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActionSheetIOS, Modal, Switch, ActivityIndicator, KeyboardAvoidingView } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActionSheetIOS, Modal, Switch, Keyboard, ActivityIndicator, KeyboardAvoidingView } from "react-native"
 import CustomLeftModal from "../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
 import * as ImagePicker from 'expo-image-picker'
-import { useState, useRef, useMemo, useCallback } from "react"
+import { useState, useRef, useMemo, useCallback, useEffect } from "react"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import useStore from '../../state/store'
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
@@ -23,8 +23,19 @@ export default function CreatePost() {
     const [currentOptions, setCurrentOptions] = useState<{ options: string[], onSelect: (value: string) => void }>({ options: [], onSelect: () => {} })
     const [isLoading, setIsLoading] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
+    const [keyboardVisible, setKeyboardVisible] = useState(false)
     const { getGradient } = useAppearanceStore()
     const activeColors = getGradient()
+
+    useEffect(() => {
+        const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
+        const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
+          
+        return () => {
+          showSub.remove()
+          hideSub.remove()
+        }
+      }, [])
 
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     
@@ -134,6 +145,7 @@ export default function CreatePost() {
                     style={{ flex: 1 }}
                     behavior={"padding"}
                     keyboardVerticalOffset={100}
+                    enabled={keyboardVisible}
                 >
                     <ScrollView 
                         style={styles.container} 

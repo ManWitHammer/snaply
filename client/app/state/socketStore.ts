@@ -95,7 +95,7 @@ const useSocketStore = create<SocketStore>((set, get) => ({
                 avatar: userDto.avatar,
                 name: userDto.name,
                 surname: userDto.surname,
-                content: message.content,
+                content: message.content || "Отправлена картинка",
                 path: '/chat/' + chatId
               }
               setNotifications([...useStore.getState().notifications, newNotification])

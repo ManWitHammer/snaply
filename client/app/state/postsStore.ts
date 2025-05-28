@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { apiUrl } from 'appConfig'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import useStore from './store'
 
 export interface IUser {
   _id: string
@@ -46,10 +47,10 @@ interface PostsState {
   fetchPost: (postId: string, page?: number) => Promise<{ post: Post, comments: Comment[] }>
   searchPosts: (query: string, page: number) => Promise<SearchData>
   likePost: (postId: string, userId: string) => Promise<boolean>
-  addComment: (postId: string, text: string) => Promise<Comment>
+  addComment: (postId: string, text: string) => Promise<Comment | null>
   fetchComments: (postId: string) => Promise<Comment[]>
   deletePost: (postId: string) => Promise<void>
-  editComment: (postId: string, commentId: string, text: string) => Promise<Comment>
+  editComment: (postId: string, commentId: string, text: string) => Promise<Comment | null>
   deleteComment: (postId: string, commentId: string) => Promise<boolean>
 }
 
@@ -76,8 +77,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
           currentPage: page,
           totalPages: response.data.meta.totalPages
         }))
-      } catch (error) {
-        set({ error: 'Failed to fetch posts' })
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
       } finally {
         set({ loading: false })
       }
@@ -95,8 +102,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
         if (response.data) {
           return response.data
         }
-      } catch (error) {
-        set({ error: 'Failed to fetch post' })
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
       }
     },
 
@@ -114,8 +127,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
           currentPage: page,
           totalPages: response.data.meta.totalPages
         }
-      } catch (error) {
-        set({ error: 'Failed to fetch posts' })
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
         return {
           posts: [],
           currentPage: 1,
@@ -126,7 +145,6 @@ const usePostsStore = create<PostsState>((set, get) => ({
       }
     },
 
-    // Лайк/дизлайк поста
     likePost: async (postId, userId) => {
       try {
         const AuthToken = await AsyncStorage.getItem('AuthToken')
@@ -155,8 +173,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
         } else {
           return false
         }
-      } catch (error) {
-        console.error('Like error:', error)
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
         return false
       }
     },
@@ -169,10 +193,19 @@ const usePostsStore = create<PostsState>((set, get) => ({
                 Authorization: AuthToken
             }
         })
-        console.log(response.data)
-        return response.data
-      } catch (error) {
-        console.error('Add comment error:', error)
+        if (response.data) {
+          return response.data
+        } else {
+          return null
+        }
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
       }
     },
 
@@ -184,9 +217,19 @@ const usePostsStore = create<PostsState>((set, get) => ({
                 Authorization: AuthToken
             }
         })
-        return response.data.data
-      } catch (error) {
-        console.error('Fetch comments error:', error)
+        if (response.data) {
+          return response.data.data
+        } else {
+          return []
+        }
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
         return []
       }
     },
@@ -202,8 +245,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
             set(state => ({
                 posts: state.posts.filter(post => post._id !== postId)
             }))
-        } catch (error) {
-            console.error('Delete post error:', error)
+        } catch (error: any) {
+          if (error.response) {
+            useStore.getState().setErrorMessage(error.response.data.message)
+          } else if (error.request) {
+            useStore.getState().setErrorMessage('Нет ответа от сервера')
+          } else {
+            useStore.getState().setErrorMessage('Непредвиденная ошибка')
+          }
         }
     },
     editComment: async (postId, commentId, text) => {
@@ -214,9 +263,20 @@ const usePostsStore = create<PostsState>((set, get) => ({
             Authorization: AuthToken
           }
         })
-        return response.data
-      } catch (error) {
-        console.error('Edit comment error:', error)
+        if (response.data) {
+          return response.data
+        } else {
+          return null
+        }
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
+        return null
       }
     },
     deleteComment: async (postId, commentId) => {
@@ -228,8 +288,14 @@ const usePostsStore = create<PostsState>((set, get) => ({
           }
         })
         return true
-      } catch (error) {
-        console.error('Delete comment error:', error)
+      } catch (error: any) {
+        if (error.response) {
+          useStore.getState().setErrorMessage(error.response.data.message)
+        } else if (error.request) {
+          useStore.getState().setErrorMessage('Нет ответа от сервера')
+        } else {
+          useStore.getState().setErrorMessage('Непредвиденная ошибка')
+        }
         return false
       }
     }

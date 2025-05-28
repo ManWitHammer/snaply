@@ -108,58 +108,62 @@ const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
         <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 16, marginLeft: 16 }}>
           Поделиться
         </Text>
-        <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
-            Выберите чат
-          </Text>
-        </View>
-        <BottomSheetFlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={localChats.length == 0 ? chats : localChats}
-          keyExtractor={(item) => item.chatId}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{ 
-                marginHorizontal: 10, 
-                alignItems: 'center',
-                width: 80
-              }}
-              onPress={() => handleShareToChat(item.chatId)}
-              disabled={localLoading}
-            >
-              {item.participant.avatar ? (
-                <Image 
-                  source={{ uri: item.participant.avatar }}
-                  style={{ width: 60, height: 60, borderRadius: 30, marginBottom: 8, backgroundColor: 'white' }}
-                  placeholder={ item.participant.avatar.startsWith('http') ? { blurhash: new URL(item.participant.avatar).search.slice(1) } : undefined}
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
-                    marginBottom: 8,
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                  }}
-                >
-                  <NotFound width={60} height={60} />
-                </View>
-              )}
-              <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }} numberOfLines={2}>
-                {item.participant.name} {item.participant.surname}
+        {localChats.length !== 0 && chats.length !== 0 ? (
+          <>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
+                Выберите чат
               </Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <Text style={{ color: 'white', textAlign: 'center', marginTop: 20 }}>
-              У вас нет чатов
-            </Text>
-          }
-          style={{ maxHeight: 100 }}
-        /> 
+            </View>
+            <BottomSheetFlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={localChats.length == 0 ? chats : localChats}
+              keyExtractor={(item) => item.chatId}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{ 
+                    marginHorizontal: 10, 
+                    alignItems: 'center',
+                    width: 80
+                  }}
+                  onPress={() => handleShareToChat(item.chatId)}
+                  disabled={localLoading}
+                >
+                  {item.participant.avatar ? (
+                    <Image 
+                      source={{ uri: item.participant.avatar }}
+                      style={{ width: 60, height: 60, borderRadius: 30, marginBottom: 8, backgroundColor: 'white' }}
+                      placeholder={ item.participant.avatar.startsWith('http') ? { blurhash: new URL(item.participant.avatar).search.slice(1) } : undefined}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 30,
+                        marginBottom: 8,
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <NotFound width={60} height={60} />
+                    </View>
+                  )}
+                  <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }} numberOfLines={2}>
+                    {item.participant.name} {item.participant.surname}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={{ color: 'white', textAlign: 'center', marginTop: 20 }}>
+                  У вас нет чатов
+                </Text>
+              }
+              style={{ maxHeight: 100 }}
+            /> 
+          </>
+        ) : ""}
         <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
           <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
             Дополнительно

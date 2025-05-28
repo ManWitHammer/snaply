@@ -3,7 +3,7 @@ import { useRouter } from "expo-router"
 import { View, ScrollView, StyleSheet, TouchableOpacity, Animated as Anim, Switch, Text } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import useStore from "../../state/store"
-import useAppearanceStore, { ThemeKey } from "../../state/appStore"
+import useAppearanceStore, { ThemeKey, themeMap } from "../../state/appStore"
 import CustomLeftModal from "../../components/CustomLeftModal"
 
 export default function ApperanceScreen() {
@@ -80,20 +80,24 @@ export default function ApperanceScreen() {
                 Тема приложения
               </Text>
               <View style={styles.themeButtonsContainer}>
-              {['blue', 'green', 'purple', 'red', 'black'].map((theme) => (
-                <TouchableOpacity
-                  key={theme}
-                  style={[styles.themeButton, currentTheme === theme && styles.activeThemeButton]}
-                  onPress={() => handleThemeChange(theme as ThemeKey)}
-                >
-                  <Text style={[styles.buttonThemeText]}>
-                    {theme.toUpperCase()}
-                  </Text>
-                  <View
-                    style={[styles.colorCircle, { backgroundColor: theme }]}
-                  />
-                </TouchableOpacity>
-              ))}
+                {Object.keys(themeMap).map((theme) => (
+                  <TouchableOpacity
+                    key={theme}
+                    style={[styles.themeButton, currentTheme === theme && styles.activeThemeButton]}
+                    onPress={() => handleThemeChange(theme as ThemeKey)}
+                  >
+                    <Text style={[styles.buttonThemeText]}>
+                      {theme.toUpperCase()}
+                    </Text>
+                    <View style={styles.colorCircle}>
+                      <LinearGradient
+                        colors={themeMap[theme as ThemeKey]}
+                        style={{ width: '100%', height: '100%', borderRadius: 999, transform: [{ rotate: '-15deg' }] }}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))}              
+              
               </View>
             </View>
 
@@ -163,14 +167,6 @@ export default function ApperanceScreen() {
       </Anim.View>
     </CustomLeftModal>
   )
-}
-
-const themeMap: Record<ThemeKey, readonly [string, string, ...string[]]> = {
-  blue: ["#445b73", "#749bb8"],
-  green: ["#3a7a3a", "#8bc28b"],
-  purple: ["#5a3a7a", "#a884d9"],
-  red: ["#a83232", "#e57373"],
-  black: ["#212121", "#424242"],
 }
 
 const styles = StyleSheet.create({

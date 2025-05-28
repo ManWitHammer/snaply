@@ -64,6 +64,7 @@ export default function CreatePost() {
       
         if (!result.canceled) {
             const newImages = result.assets
+                .filter(asset => asset.fileSize && asset.fileSize < 1024 * 1024 * 8)
                 .slice(0, 5 - images.length)
                 .map(asset => ({
                     uri: asset.uri,
@@ -103,6 +104,7 @@ export default function CreatePost() {
 
     const handleSubmit = async () => {
         setIsLoading(true)
+        Keyboard.dismiss()
         try {
             const formData = new FormData()
 

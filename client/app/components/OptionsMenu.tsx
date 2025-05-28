@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react'
-import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native'
+import React from 'react'
+import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 
 interface Option {
     label: string
@@ -18,26 +19,23 @@ interface OptionsMenuProps {
 }
 
 const OptionsMenu: React.FC<OptionsMenuProps> = ({ visible, position, options, onClose, customStyle }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: visible ? 1 : 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      if (!visible) onClose?.()
-    })
-  }, [visible])
-
   if (!visible) return null
 
   const handleAction = (action: Function, index?: number) => {
     action(index) 
+    onClose && onClose()
   }
 
   return (
-    <Animated.View style={[styles.optionsMenu, position && { position: 'absolute', left: position.x, top: position.y, }, customStyle, { opacity: fadeAnim }]}>
+    <Animated.View 
+      entering={FadeIn.duration(150)}
+      exiting={FadeOut.duration(150)}
+      style={[
+        styles.optionsMenu, 
+        position && { position: 'absolute', left: position.x, top: position.y }, 
+        customStyle
+      ]}
+    >
       {options.map((option, index) => (
         <TouchableOpacity
           key={index}
@@ -66,7 +64,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     zIndex: 100,
-    minWidth: 150,
   },
   optionItem: {
     flexDirection: 'row',

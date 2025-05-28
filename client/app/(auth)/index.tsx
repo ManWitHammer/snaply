@@ -15,7 +15,7 @@ export default function AuthChoiceScreen() {
                     <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
                       <Image source={require("../../assets/icon.png")} style={{width: 150, height: 150, marginBottom: 20}}/>
                       <Text style={styles.title}>Добро пожаловать</Text>
-                      <Text style={styles.subtitle}>в snaply!</Text>
+                      <Text style={styles.subtitle}>в Snaply!</Text>
                     </View>
                     <View>
                       <TouchableOpacity onPress={() => router.push("/login")} style={styles.button}>

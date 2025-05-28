@@ -1,5 +1,16 @@
 import { useState, useEffect, useRef } from "react"
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Text, Keyboard } from "react-native"
+import { 
+  View, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity,
+  TextInput, 
+  ActivityIndicator, 
+  Text, 
+  Keyboard, 
+  KeyboardEvent,
+  Dimensions
+} from "react-native"
 import CommentsSheet from "../../../components/CustomCommentSheet"
 import PostItem from "../../../components/PostItem"
 import { LinearGradient } from "expo-linear-gradient"
@@ -13,29 +24,40 @@ import LottieView from 'lottie-react-native'
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams()
-  const { user } = useStore()
+  const { user, setErrorMessage } = useStore()
   const { likePost, deletePost, fetchPost, addComment, deleteComment, editComment } = usePostsStore()
   const [text, setText] = useState("")
   const [editingComment, setEditingComment] = useState<Comment | null>(null)
   const { getGradient, confetti, getLastEmoji } = useAppearanceStore()
   const activeColors = getGradient()
   const [showConfetti, setShowConfetti] = useState(false)
-  const [keyboardVisible, setKeyboardVisible] = useState(false)
   const inputRef = useRef<TextInput>(null)
   const [postData, setPostData] = useState<{
     post: Post
     comments: Comment[]
   } | null>(null)
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
-      
+    const onKeyboardShow = (e: KeyboardEvent) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    };
+  
+    const onKeyboardHide = () => {
+      setKeyboardHeight(0);
+    };
+  
+      // Подписка на события
+    const showSub = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
+    const hideSub = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
+    console.log("keyboardVisible", setKeyboardHeight)
+  
     return () => {
-      showSub.remove()
-      hideSub.remove()
-    }
-  }, [])
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const loadPost = async () => {
@@ -110,27 +132,33 @@ export default function PostScreen() {
           };
         });
         setEditingComment(null);
+      } else {
+        setErrorMessage("Не удалось изменить комментарий")
       }
     } else {
       if (confetti && trimmedText.toLowerCase().includes("конфетти")) {
         setShowConfetti(true)
       }
-      const data = await addComment(id as string, trimmedText);
-      setPostData(state => {
-        if (!state) return state;
-        return {
-          ...state,
-          comments: [data, ...state.comments],
-        };
-      });
+      const data = await addComment(id as string, trimmedText)
+      if (data) {
+        setPostData(state => {
+          if (!state) return state;
+          return {
+            ...state,
+            comments: [data, ...state.comments],
+          }
+        })
+      } else {
+        setErrorMessage("Не удалось добавить комментарий")
+      }
     }
-  
+    Keyboard.dismiss()
     setText("");
   };
 
   if (!postData) {
     return (
-      <CustomModal title="Пост на стене">
+      <CustomModal title="Пост на стене" height={Dimensions.get("screen").height - keyboardHeight} bottomSheetEnable>
         <LinearGradient colors={activeColors} style={{ flex: 1, alignItems: "center", justifyContent: "center" }} >
           <ActivityIndicator size="large" color="#fff" />
         </LinearGradient>
@@ -139,14 +167,9 @@ export default function PostScreen() {
   }
 
   return (
-    <CustomModal title="Пост на стене">
+    <CustomModal title="Пост на стене" height={Dimensions.get("screen").height - keyboardHeight} bottomSheetEnable>
       <LinearGradient colors={activeColors} style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : "height"}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={100}
-          enabled={keyboardVisible}
-        >
+        <View style={{ flex: 1 }}>
           <ScrollView 
             style={styles.container}
             contentContainerStyle={{flexGrow: 1}}
@@ -200,11 +223,11 @@ export default function PostScreen() {
               <View style={[styles.inputRow]}>
                 <TextInput
                   ref={inputRef}
-                  style={styles.commentInput}
+                  style={styles.input}
                   value={text}
                   onChangeText={setText}
-                  placeholder="Написать комментарий..."
-                  placeholderTextColor="#fff"
+                  placeholder="Написать..."
+                  placeholderTextColor={activeColors[0]}
                   onSubmitEditing={handleSubmitComment}
                 />
                 <TouchableOpacity style={styles.sendButton} onPress={handleSubmitComment}>
@@ -213,7 +236,7 @@ export default function PostScreen() {
               </View>
             </View>
           )}
-        </KeyboardAvoidingView>
+        </View>
         {confetti && showConfetti && (
           <LottieView
             source={require('../../../../assets/confetti.json')}
@@ -266,16 +289,6 @@ const styles = StyleSheet.create({
     maxHeight: 130,
     minHeight: 40,
     marginRight: 10,
-  },
-  commentInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    color: '#fff',
-    marginRight: 10,
-    maxHeight: 100,
   },
   sendButton: {
     backgroundColor: '#fff',

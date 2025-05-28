@@ -3,7 +3,6 @@ import { View, TouchableOpacity, StyleSheet, Text, Dimensions } from "react-nati
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import useStore from "../state/store"
-import * as NavigationBar from "expo-navigation-bar"
 import useAppearanceStore from "../state/appStore"
 import Animated, { 
   useSharedValue, 
@@ -12,6 +11,7 @@ import Animated, {
   Easing
 } from "react-native-reanimated"
 import { Image } from "expo-image"
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface AccountInfo {
   _id?: string
@@ -36,6 +36,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
   const { user } = useStore()
   const router = useRouter()
   const screenWidth = Dimensions.get("window").width
+  const insets = useSafeAreaInsets()
 
   const getGradient = useAppearanceStore(state => state.getGradient)
   const currentTheme = useAppearanceStore(state => state.currentTheme)
@@ -48,8 +49,6 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
       duration: 500,
       easing: Easing.inOut(Easing.ease)
     })
-    NavigationBar.setBackgroundColorAsync(gradientColors[0])
-    NavigationBar.setButtonStyleAsync("light")
   }, [currentTheme])
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -57,7 +56,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
   }))
 
   return (
-    <AnimatedView style={[styles.headerContainer, animatedStyle]}>
+    <AnimatedView style={[styles.headerContainer, animatedStyle, { paddingTop: insets.top + 5 }]}>
       {showBack ? (
         <TouchableOpacity onPress={() => back ? back() : router.back()} style={styles.button}>
           <Ionicons name="arrow-back" size={30} color="#fff" />
@@ -107,7 +106,7 @@ const CustomHeader = ({ showBack = false, showSearch = false, title, back, accou
         </TouchableOpacity>
       )}
 
-      <View style={[styles.bottomLine, { width: screenWidth * 0.9 }]} />
+      <View style={[styles.bottomLine, { width: screenWidth * 0.96, left: screenWidth * 0.02 }]} />
     </AnimatedView>
   )
 }
@@ -116,7 +115,6 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 40,
     paddingBottom: 10,
     paddingHorizontal: 15,
   },
@@ -134,7 +132,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     position: "absolute",
     bottom: 0,
-    left: "5%",
   },
   avatar: {
     width: 30,

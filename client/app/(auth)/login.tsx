@@ -18,8 +18,10 @@ import { LinearGradient } from "expo-linear-gradient"
 import CustomInput from "@/components/CustomInput"
 import useStore from "../state/store"
 import useAppearanceStore from '../state/appStore'
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets()
   const { user, setField, login, setIsAuth } = useStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const router = useRouter()
@@ -97,7 +99,7 @@ export default function LoginScreen() {
               { paddingBottom: keyboardHeight }
             ]}
           >
-            <View style={styles.mainContent}>
+            <View style={[styles.mainContent, { paddingTop: insets.top + 10 }]}>
               <Text style={styles.title}>Вход</Text>
               
               <CustomInput
@@ -129,9 +131,9 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             
-            <View style={styles.bottomLinkContainer}>
+            <View style={[styles.bottomLinkContainer, { paddingBottom: insets.bottom + 10 }]}>
               <Text style={styles.linkText}>
-                Нет аккаунта? <Link href="/register" style={styles.link} replace>Зарегистрироваться</Link>
+                Нет аккаунта? <Link href="/register" style={[styles.link, { color: activeColors[0] }]} replace>Зарегистрироваться</Link>
               </Text>
             </View>
           </Animated.View>
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
   bottomLinkContainer: {
     width: '100%',
     padding: 20,
-    paddingBottom: 30,
   },
   title: {
     fontSize: 28,

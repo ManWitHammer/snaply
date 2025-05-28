@@ -12,7 +12,7 @@ import { Image } from "expo-image"
 
 export default function ChatScreen() {
   const router = useRouter()
-  const { chats, loading, error, fetchChats } = useChatsStore()
+  const { chats, loading, fetchChats } = useChatsStore()
   const { getGradient } = useAppearanceStore()
   const activeColors = getGradient()
 
@@ -72,8 +72,6 @@ export default function ChatScreen() {
       
       {loading ? (
         <ActivityIndicator size="large" color="#fff" style={styles.loader} />
-      ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
       ) : chats.length === 0 ? (
         <Text style={styles.noChatsText}>У вас пока нет чатов</Text>
       ) : (

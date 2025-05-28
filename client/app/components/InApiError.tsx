@@ -137,7 +137,7 @@ export default function InApiError({ style }: InApiErrorProps) {
                             <NotFound width={40} height={40}/>
                         )}
                         <View style={styles.notificationInfo}>
-                            <Text style={styles.nameText}>
+                            <Text style={styles.nameText} numberOfLines={1}>
                                 {notification.name} {notification.surname}
                             </Text>
                             <Text style={styles.contentText} numberOfLines={2}>

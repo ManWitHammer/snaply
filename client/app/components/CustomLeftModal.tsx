@@ -9,11 +9,12 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated"
-import { useNavigation } from "expo-router"
+import { useNavigation  } from "expo-router"
 import CustomHeader from "./CustomHeader"
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import InApiError from "./InApiError"
 import { StatusBar } from "expo-status-bar"
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const { width } = Dimensions.get("window")
 
@@ -31,17 +32,20 @@ interface CustomLeftModalProps {
   title?: string
   bottomSheetEnable?: boolean
   accountInfo?: AccountInfo
+  height?: number
 }
 
 export default function CustomLeftModal({
   children,
   title,
   bottomSheetEnable,
-  accountInfo
+  accountInfo,
+  height = Dimensions.get("screen").height,
 }: CustomLeftModalProps) {
   const router = useRouter()
   const translateX = useSharedValue(width)
   const navigation = useNavigation()
+  const insets = useSafeAreaInsets()
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -83,12 +87,21 @@ export default function CustomLeftModal({
     transform: [{ translateX: translateX.value }],
   }))
 
+  const containerStyle = [
+    styles.modal,
+    animatedStyle,
+    { 
+      height,
+      paddingBottom: insets.bottom
+    }
+  ]
+
   return (
     <>
       <GestureDetector gesture={swipeGesture}>
         {bottomSheetEnable ? (
-          <Animated.View style={[styles.modal, animatedStyle]}>
-            <StatusBar style='light' backgroundColor='transparent' translucent hidden={false}/>
+          <Animated.View style={containerStyle}>
+            <StatusBar style='light' hidden={false}/>
             <BottomSheetModalProvider>
               { Platform.OS === 'ios' && <InApiError style={{ width: width - 40, marginLeft: 20 }}/> }
               <CustomHeader title={title} back={closeModal} accountInfo={accountInfo} showBack/>
@@ -96,8 +109,8 @@ export default function CustomLeftModal({
             </BottomSheetModalProvider>
           </Animated.View>
         ) : (
-          <Animated.View style={[styles.modal, animatedStyle]}>
-            <StatusBar style='light' backgroundColor='transparent' translucent hidden={false}/>
+          <Animated.View style={containerStyle}>
+            <StatusBar style='light' hidden={false}/>
             { Platform.OS === 'ios' && <InApiError style={{ width: width - 40, marginLeft: 20 }}/> }
             <CustomHeader title={title} back={closeModal} accountInfo={accountInfo} showBack/>
             {children}
@@ -110,7 +123,6 @@ export default function CustomLeftModal({
 
 const styles = StyleSheet.create({
   modal: {
-    flex: 1,
     backgroundColor: "white",
     overflow: "hidden",
   },

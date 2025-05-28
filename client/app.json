@@ -3,7 +3,7 @@
     "name": "Snaply",
     "slug": "snaply",
     "description": "Социальная сеть",
-    "version": "0.3",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,8 +15,8 @@
       "translucent": true
     },
     "androidNavigationBar": {
-      "backgroundColor": "#749bb8",
-      "barStyle": "light-content"
+      "barStyle": "light-content",
+      "backgroundColor": "#00000000"
     },
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -28,6 +28,18 @@
       "bundleIdentifier": "org.manwithammer.snaply",
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
+          "audio",
           "audio",
           "audio",
           "audio",
@@ -49,6 +61,11 @@
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
@@ -64,7 +81,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6429e468-9d2e-48a8-8d3c-00e0239dd468"
+        "projectId": "c1fb1d07-bd82-4e8a-8209-4cf401c70dab"
       }
     },
     "owner": "manwithammer"

@@ -1,28 +1,27 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { LinearGradient as blueTheme } from '../styles/blue-theme'
-import { LinearGradient as greenTheme } from '../styles/green-theme'
-import { LinearGradient as purpleTheme } from '../styles/purple-theme'
-import { LinearGradient as redTheme } from '../styles/red-theme'
-import { LinearGradient as blackTheme } from '../styles/black-theme'
-import * as Crypto from 'expo-crypto';
+import * as Crypto from 'expo-crypto'
 
-export type ThemeKey = 'blue' | 'green' | 'purple' | 'red' | 'black'
+export type ThemeKey = 'blue' | 'green' | 'purple' | 'piglet' | 'black' | 'sunset' | 'earth'
 
 export const themeMap: Record<ThemeKey, readonly [string, string, ...string[]]> = {
-  blue: blueTheme,
-  green: greenTheme,
-  purple: purpleTheme,
-  red: redTheme,
-  black: blackTheme,
+  blue: ["#445b73", "#749bb8"],
+  green: ["#141517", "#6a9113"],
+  purple: ["#6a3093", "#a044ff"],
+  piglet: ["#ee9ca7", "#ffdde1"],
+  black: ["#212121", "#424242"],
+  sunset: ["#c02425", "#f0cb35"],
+  earth: ["#00c9ff", "#92fe9d"],
 }
 
 export const commentColorMap: Record<ThemeKey, string> = {
   blue: '#2c3e50',
-  green: '#2f4032',
-  purple: '#3d2f4f',
-  red: '#4a2c2c',
+  green: '#040700',
+  purple: '#3b1463',
+  piglet: '#e86a8a',
   black: '#1a1a1a',
+  sunset: '#761213',
+  earth: '#22a69a',
 }
 
 interface AppearanceState {

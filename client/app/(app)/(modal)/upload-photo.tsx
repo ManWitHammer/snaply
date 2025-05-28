@@ -33,6 +33,7 @@ export default function CreatePost() {
       
         if (!result.canceled) {
             const newImages = result.assets
+                .filter(asset => asset.fileSize && asset.fileSize < 1024 * 1024 * 8)
                 .slice(0, 10 - images.length)
                 .map(asset => ({
                     uri: asset.uri,
@@ -42,8 +43,7 @@ export default function CreatePost() {
           
             setImages(prev => [...prev, ...newImages])
         }
-    }
-      
+    }      
     const getFileExtension = (mimeType?: string) => {
         if (!mimeType) return 'jpg'
             const parts = mimeType.split('/')

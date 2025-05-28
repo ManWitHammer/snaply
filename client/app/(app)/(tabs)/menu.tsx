@@ -112,7 +112,7 @@ export default function MenuScreen() {
                         <Text style={styles.modalMessage}>Вы уверены, что хотите выйти?</Text>
                         <View style={styles.modalButtonsContainer}>
                             <TouchableOpacity style={styles.modalButton} onPress={cancelLogout}>
-                                <Text style={styles.modalButtonText}>Нет</Text>
+                                <Text style={[styles.modalButtonText, { color: activeColors[0] }]}>Нет</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.modalButtonDanger]}
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         marginHorizontal: 5,
         borderRadius: 5,
-        backgroundColor: '#007AFF', 
+        backgroundColor: '#fff', 
         justifyContent: 'center',
         alignItems: 'center',
       },

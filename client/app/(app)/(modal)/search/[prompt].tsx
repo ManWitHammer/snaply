@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import CustomLeftModal from "../../../components/CustomLeftModal"
 import { LinearGradient } from "expo-linear-gradient"
@@ -89,102 +89,105 @@ const SearchScreen = () => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CustomLeftModal title="Поиск" bottomSheetEnable>
         <LinearGradient colors={activeColors} style={styles.container}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#fff" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder={selectedTab === "users" ? "Пользователи" : "Посты"}
-              value={searchQuery}
-              onChangeText={handleSearch}
-              placeholderTextColor="#fff"
-            />
-          </View>
+          <ScrollView>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#fff" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder={selectedTab === "users" ? "Пользователи" : "Посты"}
+                value={searchQuery}
+                onChangeText={handleSearch}
+                placeholderTextColor="#fff"
+              />
+            </View>
 
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, selectedTab === "users" && styles.activeTab]}
-              onPress={() => setSelectedTab("users")}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  selectedTab === "users" && styles.activeTabText,
-                ]}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, selectedTab === "users" && styles.activeTab]}
+                onPress={() => setSelectedTab("users")}
               >
-                Пользователи
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, selectedTab === "posts" && styles.activeTab]}
-              onPress={() => setSelectedTab("posts")}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  selectedTab === "posts" && styles.activeTabText,
-                ]}
+                <Text
+                  style={[
+                    styles.tabText,
+                    selectedTab === "users" && styles.activeTabText,
+                  ]}
+                >
+                  Пользователи
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, selectedTab === "posts" && styles.activeTab]}
+                onPress={() => setSelectedTab("posts")}
               >
-                Посты
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <Text
+                  style={[
+                    styles.tabText,
+                    selectedTab === "posts" && styles.activeTabText,
+                  ]}
+                >
+                  Посты
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          {selectedTab === "users" ? (
-            <FlatList
-              data={searchResults}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <UserListItem item={item}/>
-              )}
-              ListEmptyComponent={
-                loadingSearch ? (
-                  <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
-                ) : (
-                  <View style={styles.emptyContainer}>
-                    <Ionicons name="person-outline" size={80} color="#fff" />
-                    <Text style={styles.emptyText}>
-                      {!searchQuery
-                        ? "Введите имя или фамилию для поиска"
-                        : "Пользователи не найдены"}
-                    </Text>
-                  </View>
-                )
-              }
-            />
-          ) : (
-            <FlatList
-              data={postResults}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <PostItem 
-                  post={item} 
-                  onLike={handleLike} 
-                  isLiked={item.likes.includes(user?.id || '')}
-                  onDelete={deletePost}
-                  currentUserId={user?.id}
-                />
-              )}
-              onEndReached={loadMorePosts}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={
-                loadingPosts ? <ActivityIndicator color="#fff" /> : null
-              }
-              ListEmptyComponent={
-                loadingSearch ? (
-                  <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
-                ) : (
-                  <View style={styles.emptyContainer}>
-                    <Ionicons name="albums-outline" size={80} color="#fff" />
-                    <Text style={styles.emptyText}>
-                      {!searchQuery
-                        ? "Введите часть текста или хэштег для поиска постов"
-                        : "Посты не найдены"}
-                    </Text>
-                  </View>
-                )
-              }
-            />
-          )}
+            {selectedTab === "users" ? (
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => item._id}
+                contentContainerStyle={{ marginHorizontal: 5 }}
+                scrollEnabled={false}
+                renderItem={({ item }) => (
+                  <UserListItem item={item}/>
+                )}
+                ListEmptyComponent={
+                  loadingSearch ? (
+                    <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <Ionicons name="person-outline" size={80} color="#fff" />
+                      <Text style={styles.emptyText}>
+                        {!searchQuery
+                          ? "Введите имя или фамилию для поиска"
+                          : "Пользователи не найдены"}
+                      </Text>
+                    </View>
+                  )
+                }
+              />
+            ) : (
+              <FlatList
+                data={postResults}
+                keyExtractor={(item) => item._id}
+                scrollEnabled={false}
+                contentContainerStyle={{ marginHorizontal: 5 }}
+                renderItem={({ item }) => (
+                  <PostItem 
+                    post={item} 
+                    onLike={handleLike} 
+                    isLiked={item.likes.includes(user?.id || '')}
+                    onDelete={deletePost}
+                    currentUserId={user?.id}
+                  />
+                )}
+                onEndReached={loadMorePosts}
+                onEndReachedThreshold={0.5}
+                ListEmptyComponent={
+                  loadingSearch ? (
+                    <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <Ionicons name="albums-outline" size={80} color="#fff" />
+                      <Text style={styles.emptyText}>
+                        {!searchQuery
+                          ? "Введите часть текста или хэштег для поиска постов"
+                          : "Посты не найдены"}
+                      </Text>
+                    </View>
+                  )
+                }
+              />
+            )}
+          </ScrollView>
         </LinearGradient>
       </CustomLeftModal>
     </GestureHandlerRootView>
@@ -195,8 +198,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1e1e1e",
-    paddingTop: 15,
-    paddingHorizontal: 5
   },
   searchContainer: {
     flexDirection: "row",
@@ -204,8 +205,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 10,
     paddingHorizontal: 10,
-    marginHorizontal: 10,
-    marginBottom: 15,
+    margin: 15
   },
   icon: {
     marginRight: 5,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: "row",
-    marginHorizontal: 10,
+    marginHorizontal: 15,
     marginBottom: 10,
   },
   tab: {

@@ -1,4 +1,4 @@
-import { View, FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { View, FlatList, StyleSheet, Text, TouchableOpacity, Pressable } from 'react-native'
 import * as Clipboard from "expo-clipboard"
 import { Ionicons } from "@expo/vector-icons"
 import { useState } from 'react'
@@ -7,6 +7,7 @@ import { ru } from 'date-fns/locale'
 import useStore from '../state/store'
 import { Image } from "expo-image"
 import NotFound from '../../assets/not-found'
+import { useRouter } from 'expo-router'
 
 interface IUser {
   _id: string
@@ -33,6 +34,7 @@ const CommentsSheet = ({
   onDeleteComment,
   onEditComment
 }: CommentsSheetProps) => {
+  const router = useRouter()
   const [showOptionsFor, setShowOptionsFor] = useState<string | null>(null)
   const { user } = useStore()
 
@@ -51,15 +53,18 @@ const CommentsSheet = ({
                 onLongPress={() => setShowOptionsFor(item._id)} 
                 style={styles.commentItem}
               >
-                {item.userId.avatar ? (
-                  <Image
-                    source={{ uri: item.userId.avatar }}
-                    style={styles.commentAvatar}
-                    placeholder={ item.userId.avatar.startsWith('http') ? { blurhash: new URL(item.userId.avatar).search.slice(1) } : undefined}
-                  />
-                ) : (
-                  <NotFound width={40} height={40} />
-                )}
+                <Pressable onPress={() => router.push(`/profile/${item.userId._id}`)}>
+                  {item.userId.avatar ? (
+                    <Image
+                      source={{ uri: item.userId.avatar }}
+                      style={styles.commentAvatar}
+                      placeholder={ item.userId.avatar.startsWith('http') ? { blurhash: new URL(item.userId.avatar).search.slice(1) } : undefined}
+                    />
+                  ) : (
+                    <NotFound width={40} height={40} />
+                  )}
+                </Pressable>
+                  
                 <View style={styles.commentTextContainer}>
                   <Text style={styles.commentAuthor} numberOfLines={1}>
                     {item.userId.name} {item.userId.surname}
@@ -127,7 +132,7 @@ const styles = StyleSheet.create({
   },
   commentItem: { 
     flexDirection: 'row', 
-    backgroundColor: 'rgba(255,255,255,0.2)', 
+    backgroundColor: '#fff', 
     padding: 12, 
     borderRadius: 10, 
     marginBottom: 8,
@@ -140,17 +145,17 @@ const styles = StyleSheet.create({
   commentAuthor: { 
     fontWeight: 'bold', 
     marginBottom: 4, 
-    color: '#fff',
+    color: 'black',
     fontSize: 14,
   },
   commentText: { 
     fontSize: 15, 
-    color: '#ddd',
+    color: 'black',
     marginBottom: 4
   },
   commentDate: {
     fontSize: 11, 
-    color: '#aaa'
+    color: '#333'
   },
   commentAvatar: { 
     width: 40, 

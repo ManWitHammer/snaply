@@ -17,8 +17,10 @@ import CustomInput from "../components/CustomInput"
 import useStore from "../state/store"
 import useAppearanceStore from "../state/appStore"
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 export default function RegisterScreen() {
+  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { user, errors, setField, validateField, registration } = useStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
@@ -58,7 +60,7 @@ export default function RegisterScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       enabled={keyboardVisible}
     >
-      <LinearGradient colors={activeColors} style={styles.container}>
+      <LinearGradient colors={activeColors} style={[styles.container, { paddingTop: insets.top + 10 }]}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
@@ -144,7 +146,9 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.linkText}>Есть аккаунт? <Link href="/login" style={styles.link} replace>Авторизоваться</Link></Text>
+          <Text style={[styles.linkText, { paddingBottom: insets.bottom + 10 }]}>
+            Есть аккаунт? <Link href="/login" style={[styles.link, { color: activeColors[0] }]} replace>Авторизоваться</Link>
+          </Text>
         </ScrollView>
       </LinearGradient>
     </KeyboardAvoidingView>
@@ -155,7 +159,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    paddingTop: 40,
     alignItems: "center",
   },
   scrollContainer: {
@@ -190,7 +193,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
     color: "#fff",
-    paddingBottom: 30,
   },
   link: {
     color: "#ffcccb",

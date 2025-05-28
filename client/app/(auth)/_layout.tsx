@@ -1,19 +1,12 @@
 import { Stack } from 'expo-router'
 import { View, Dimensions } from 'react-native'
 import InApiError from "../components/InApiError"
-import * as NavigationBar from "expo-navigation-bar"
-import { useEffect } from "react"
-import useAppearanceStore from '../state/appStore'
+import { StatusBar } from 'expo-status-bar'
 
 export default function RootLayout() {
-    const { getGradient } = useAppearanceStore()
-    const activeColors = getGradient()
-    useEffect(() => {
-        NavigationBar.setBackgroundColorAsync(activeColors[1])
-        NavigationBar.setButtonStyleAsync("light")
-      }, [])
     return (
         <View style={{flex: 1}}>
+            <StatusBar style='light' hidden={false} />
             <InApiError style={{width: Dimensions.get("window").width - 40, marginLeft: 20}}/>
             <Stack>
                 <Stack.Screen

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { apiUrl } from '../../appConfig'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import useStore from './store'
 
 export interface ChatParticipant {
     _id: string
@@ -51,7 +52,6 @@ interface ChatState {
     chats: Chat[]
     currentChatId: string | null;
     loading: boolean
-    error: string | null
     setCurrentChatId: (chatId: string | null) => void;
     fetchChats: () => Promise<Chat[]>
     sendMessage: (chatId: string, formData: FormData) => Promise<sendMessageDto>
@@ -65,10 +65,9 @@ const useChatsStore = create<ChatState>((set, get) => ({
     chats: [],
     currentChatId: null,
     loading: false,
-    error: null,
 
     fetchChats: async () => {
-        set({ loading: true, error: null })
+        set({ loading: true })
         const AuthToken = await AsyncStorage.getItem('AuthToken')
         try {
             const response = await axios.get(`${apiUrl}/api/chats`, {
@@ -81,8 +80,14 @@ const useChatsStore = create<ChatState>((set, get) => ({
                 return response.data
             }
             return []
-        } catch (error) {
-            set({ error: 'Ощибка с получением чатов' })
+        } catch (error: any) {
+            if (error.response) {
+                useStore.getState().setErrorMessage(error.response.data.message)
+            } else if (error.request) {
+                useStore.getState().setErrorMessage('Нет ответа от сервера')
+            } else {
+                useStore.getState().setErrorMessage('Непредвиденная ошибка')
+            }
             return []
         } finally {
             set({ loading: false })
@@ -100,8 +105,14 @@ const useChatsStore = create<ChatState>((set, get) => ({
                 return response.data
             }
             return { messages: [], hasMore: false }
-        } catch (error) {
-            set({ error: 'Ошибка с получением сообщений' })
+        } catch (error: any) {
+            if (error.response) {
+                useStore.getState().setErrorMessage(error.response.data.message)
+            } else if (error.request) {
+                useStore.getState().setErrorMessage('Нет ответа от сервера')
+            } else {
+                useStore.getState().setErrorMessage('Непредвиденная ошибка')
+            }
             return { messages: [], hasMore: false }
         }
     },
@@ -143,8 +154,14 @@ const useChatsStore = create<ChatState>((set, get) => ({
                 image: response.data.image,
                 timestamp: response.data.timestamp
             };
-        } catch (error) {
-          console.error('Send message error:', error);
+        } catch (error: any) {
+            if (error.response) {
+                useStore.getState().setErrorMessage(error.response.data.message)
+            } else if (error.request) {
+                useStore.getState().setErrorMessage('Нет ответа от сервера')
+            } else {
+                useStore.getState().setErrorMessage('Непредвиденная ошибка')
+            }
           return { success: false };
         }
     },
@@ -161,9 +178,15 @@ const useChatsStore = create<ChatState>((set, get) => ({
             );
             if (response.data) return true
             else return false
-        } catch (error) {
-          console.error('Delete message error:', error);
-          return false;
+        } catch (error: any) {
+            if (error.response) {
+                useStore.getState().setErrorMessage(error.response.data.message)
+            } else if (error.request) {
+                useStore.getState().setErrorMessage('Нет ответа от сервера')
+            } else {
+                useStore.getState().setErrorMessage('Непредвиденная ошибка')
+            }
+            return false;
         }
     },
     
@@ -181,8 +204,14 @@ const useChatsStore = create<ChatState>((set, get) => ({
             );
             if (response.data) return true
             else return false
-        } catch (error) {
-          console.error('Edit message error:', error);
+        } catch (error: any) {
+            if (error.response) {
+                useStore.getState().setErrorMessage(error.response.data.message)
+            } else if (error.request) {
+                useStore.getState().setErrorMessage('Нет ответа от сервера')
+            } else {
+                useStore.getState().setErrorMessage('Непредвиденная ошибка')
+            }
           return false;
         }
     },

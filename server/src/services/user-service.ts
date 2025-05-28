@@ -759,14 +759,26 @@ class UserService {
 
     const userIsYou = await UserModel.findOne({ email: userData.email })
     if (!userIsYou) throw ApiError.BadRequest('Пользователь не найден')
+
+    const user = await UserModel.findById(userId)
+    if (!user) throw ApiError.BadRequest('Пользователь не найден')
     
     const skip = (page - 1) * limit
-    const userFriends = await UserModel.find({ _id: { $in: userIsYou.friends } })
-      .skip(skip)
-      .limit(limit)
-      .select('name surname nickname avatar friends settings')
+    const userFriends = await UserModel.findById(userId)
+      .populate({
+        path: 'friends',
+        select: 'name surname nickname avatar friends settings',
+        options: {
+          skip: skip,
+          limit: limit
+        }
+      })
 
-    const populatedUsersData = await Promise.all(userFriends.map(async (user) => {
+    if (!userFriends || !userFriends.friends) {
+      return []
+    }
+
+    const populatedUsersData = await Promise.all(userFriends.friends.map(async (user: any) => {
       if (!user.settings) {
         return user
       }
@@ -777,7 +789,7 @@ class UserService {
         case 'Все':
           break
         case 'Друзья':
-          if (!user.friends.map(f => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
+          if (!user.friends.map((f: string) => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
             user.avatar = null
           }
           break
@@ -794,7 +806,7 @@ class UserService {
         case 'Все':
           break
         case 'Друзья':
-          if (!user.friends.map(f => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
+          if (!user.friends.map((f: string) => f.toString()).includes((userIsYou._id as Types.ObjectId).toString())) {
             user.friends = []
           }
           break

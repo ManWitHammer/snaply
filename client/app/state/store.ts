@@ -289,6 +289,7 @@ const useStore = create<FormStore>((set, get) => ({
         }
     },
     checkAuth: async () => {
+        const { cleanAll } = useApperanceStore.getState()
         try {
             const AuthToken = await AsyncStorage.getItem('AuthToken');
             const response = await axios.get(`${apiUrl}/api/checkauth`, {
@@ -305,6 +306,7 @@ const useStore = create<FormStore>((set, get) => ({
                 return 403
             } else return response.status
         } catch (err: any) {
+            cleanAll()
             return err.response?.status || 500;
         }
     },

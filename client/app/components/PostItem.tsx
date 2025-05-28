@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Pressable, NativeSyntheticEvent, TextLayoutEventData } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Pressable, NativeSyntheticEvent, TextLayoutEventData, ToastAndroid } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -15,6 +15,7 @@ import * as Clipboard from "expo-clipboard"
 import OptionsMenu from './OptionsMenu'
 import ShareBottomSheet from './ShareBottomSheet'
 import { Post } from '../state/postsStore'
+import useStore from '../state/store'
 import NotFound from 'assets/not-found'
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated'
 
@@ -41,7 +42,8 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
     const [isSaving, setIsSaving] = useState(false);
     const [visible, setIsVisible] = useState(false);
     const imagesRef = useRef<FlatList>(null)
-    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null)
+    const { setErrorMessage } = useStore()
 
     const scrollToIndex = (index: number) => {
         imagesRef.current?.scrollToIndex({ index, animated: true })
@@ -81,24 +83,28 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
     }
 
     const saveToGallery = async (index?: number) => {
+        if (isSaving) return
         if (!index) index = currentIndex
         setShowOptions(false)
         setIsSaving(true)
         
         try {
-            const { status } = await MediaLibrary.requestPermissionsAsync()
-            if (status !== 'granted') {
-                return
-        }
+          const { status } = await MediaLibrary.requestPermissionsAsync()
+          if (status !== 'granted') {
+            setErrorMessage('Не удалось получить доступ к галерее')
+            return
+          }
 
-        const imageUri = post.images[index]
-        
-        const downloadResult = await FileSystem.downloadAsync(
-            imageUri,
-            FileSystem.documentDirectory + `image_${Date.now()}.jpg`
-        )
+          const imageUri = post.images[index]
+          
+          const downloadResult = await FileSystem.downloadAsync(
+              imageUri,
+              FileSystem.documentDirectory + `image_${Date.now()}.jpg`
+          )
 
-        await MediaLibrary.saveToLibraryAsync(downloadResult.uri)
+          await MediaLibrary.saveToLibraryAsync(downloadResult.uri)
+
+          ToastAndroid.show('Изображение сохранено', ToastAndroid.SHORT)
         
         } catch (error) {
             console.error('Ошибка сохранения:', error)
@@ -157,25 +163,23 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
           </View>
         </TouchableOpacity>
         
-        <View style={{ position: 'relative' }}>
-          <TouchableOpacity 
-            style={styles.moreButton}
-            onPress={() => setShowOptions(!showOptions)}
-          >
-            <Ionicons 
-              name="ellipsis-horizontal" 
-              size={20} 
-              color="#666" 
-            />
-          </TouchableOpacity>
-          
-          <OptionsMenu
-            visible={showOptions}
-            options={options}
-            onClose={() => setShowOptions(false)}
-            customStyle={styles.optionsMenu}
+        <TouchableOpacity 
+          style={styles.moreButton}
+          onPress={() => setShowOptions(!showOptions)}
+        >
+          <Ionicons 
+            name="ellipsis-horizontal" 
+            size={20} 
+            color="#666" 
           />
-        </View>
+        </TouchableOpacity>
+          
+        <OptionsMenu
+          visible={showOptions}
+          options={options}
+          onClose={() => setShowOptions(false)}
+          customStyle={styles.optionsMenu}
+        />
       </View>
       
       {post.content && (
@@ -292,6 +296,7 @@ export default function PostItem({ post, onLike, isLiked, onDelete, currentUserI
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => router.push(`/post/${post._id}`)}
+          disabled={commentPressable}
         >
           <Ionicons name="chatbubble-outline" size={22} color="#333" />
           {post.commentsEnabled && (
@@ -383,8 +388,8 @@ const styles = StyleSheet.create({
   },
   optionsMenu: {
     position: 'absolute',
-    right: 0,
-    top: 30,
+    right: 10,
+    top: 50,
   },
   postContainer: {
     backgroundColor: '#fff',

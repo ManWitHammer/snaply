@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from "react"
-import { View, Text, StyleSheet, SectionList, TextInput, TouchableOpacity, KeyboardAvoidingView, Keyboard, Dimensions, TouchableWithoutFeedback } from "react-native"
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SectionList, 
+  TextInput, 
+  TouchableOpacity,
+  Keyboard, 
+  Dimensions, 
+  TouchableWithoutFeedback,
+  KeyboardEvent,
+  ToastAndroid
+} from "react-native"
 import * as Clipboard from "expo-clipboard"
 import ImageView from '@staltz/react-native-image-viewing'
 import * as MediaLibrary from 'expo-media-library'
@@ -63,20 +75,29 @@ export default function ChatScreen() {
   const { getGradient, getCommentColor, getLastEmoji, confetti } = useAppearanceStore()
   const commentColor = getCommentColor()
   const activeColors = getGradient()
-  const [keyboardVisible, setKeyboardVisible] = useState(false)
   const inputRef = useRef<TextInput>(null)
   const bottomSheetModalRef = useRef<BottomSheetModal>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true))
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false))
-    
+    const onKeyboardShow = (e: KeyboardEvent) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    };
+
+    const onKeyboardHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const showSub = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
+    const hideSub = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
+
     return () => {
-      showSub.remove()
-      hideSub.remove()
-    }
-  }, [])
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
   
   const handleInputChange = (text: string) => {
     setInputValue(text)
@@ -239,14 +260,18 @@ export default function ChatScreen() {
       quality: 1,
     })
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets[0]) {
+      if (result.assets[0].fileSize && result.assets[0].fileSize > 1024 * 1024 * 6) {
+        setErrorMessage("Картинка не может превышать 6МБ")
+        return
+      }
       const newImage = {
         uri: result.assets[0].uri,
         type: result.assets[0].mimeType || 'image/jpeg',
         name: `image-${Date.now()}.${getFileExtension(result.assets[0].mimeType)}`
       }
       setSelectedImage(newImage)
-    }
+    }  
   }
 
   const openBottomSheet = async () => {
@@ -257,9 +282,9 @@ export default function ChatScreen() {
     if (!visibleImageId) return []
     
     const message = messages.find(msg => msg._id === visibleImageId)
-    if (!message?.image) return []
-    
-    return [{ uri: message.image }]
+    if (message?.forwardedFromPost?.images[0]) return [{ uri:message?.forwardedFromPost?.images[0] }]
+    else if (message?.image) return [{ uri: message?.image }]
+    else return []
   }
 
   const handleLongPress = (message: ChatMessage, event: any) => {
@@ -273,13 +298,13 @@ export default function ChatScreen() {
     
     setSelectedMessage(message)
     setOptionsPosition({ 
-      x: isNearRight ? SCREEN_WIDTH - 300 : 
-         isNearLeft ? 0 : pageX - 150,
-      y: isNearBottom ? SCREEN_HEIGHT - 200 : 
-         isNearTop ? 0 : pageY - 50
+      x: Math.max(0, Math.min(SCREEN_WIDTH - 300, isNearRight ? SCREEN_WIDTH - 300 : 
+         isNearLeft ? 0 : pageX - 150)),
+      y: Math.max(0, Math.min(SCREEN_HEIGHT - 200, isNearBottom ? SCREEN_HEIGHT - 200 : 
+         isNearTop ? 0 : pageY - 50))
     })
     setShowOptions(true)
-  }
+  }  
   const handleOutsidePress = () => {
     if (showOptions) {
       setShowOptions(false)
@@ -452,9 +477,11 @@ export default function ChatScreen() {
   }, [chatId])
 
   const handleSaveImage = async () => {
+    if (isSaving) return
     if (!selectedMessage?.image) return
     
     try {
+      setIsSaving(true)
       const { status } = await MediaLibrary.requestPermissionsAsync()
       if (status !== 'granted') {
         alert('Для сохранения изображения нужны разрешения на доступ к галерее')
@@ -469,11 +496,14 @@ export default function ChatScreen() {
 
       const asset = await MediaLibrary.createAssetAsync(uri)
       await MediaLibrary.createAlbumAsync('Downloads', asset, false)
+
+      ToastAndroid.show('Изображение сохранено', ToastAndroid.SHORT)
       
     } catch (error) {
       console.log(error)
     } finally {
       setShowOptions(false)
+      setIsSaving(false)
     }
   }
 
@@ -525,8 +555,8 @@ export default function ChatScreen() {
       : []),
     ...(selectedMessage?.image
       ? [{
-          label: 'Сохранить изображение',
-          icon: 'download-outline',
+          label: isSaving ? 'Сохранение...' : 'Сохранить в галерею',
+          icon: isSaving ? 'cloud-download' : 'download-outline',
           action: handleSaveImage
         }, {
           label: 'Посмотреть изображение',
@@ -542,7 +572,7 @@ export default function ChatScreen() {
   const groupedMessages = groupMessagesByDate(messages)
 
   return (
-    <CustomLeftModal title="Чат" accountInfo={otherParticipant} bottomSheetEnable>
+    <CustomLeftModal title="Чат" accountInfo={otherParticipant} height={Dimensions.get("screen").height - keyboardHeight} bottomSheetEnable>
       <TouchableWithoutFeedback onPress={handleOutsidePress}>
           <LinearGradient colors={activeColors} style={styles.container}>
             <ImageView
@@ -554,12 +584,7 @@ export default function ChatScreen() {
               swipeToCloseEnabled
               doubleTapToZoomEnabled
             />
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={"height"}
-              keyboardVerticalOffset={100}
-              enabled={keyboardVisible}
-            >
+            <View style={{ flex: 1 }}>
               <SectionList
                 sections={groupedMessages}
                 keyExtractor={(item) => item._id}
@@ -597,6 +622,7 @@ export default function ChatScreen() {
                     handleLongPress={handleLongPress}
                     setShowOptions={setShowOptions}
                     commentColor={commentColor}
+                    onImagePress={(id: string) => {!showOptions ? setVisibleImageId(id) : setShowOptions(false); setSelectedMessage(null)}}
                   />
                 )}
                 contentContainerStyle={styles.messagesList}
@@ -654,7 +680,7 @@ export default function ChatScreen() {
                     value={editingMessage ? editText : inputValue}
                     onChangeText={text => editingMessage ? setEditText(text) : handleInputChange(text)}
                     placeholder={editingMessage ? "" : "Напиcать..."}
-                    placeholderTextColor="#ccc"
+                    placeholderTextColor={activeColors[0]}
                     multiline
                     editable={!sending}
                     onSubmitEditing={handleSend}
@@ -673,7 +699,7 @@ export default function ChatScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </KeyboardAvoidingView>
+            </View>
             {showConfetti && confetti && (
               <LottieView
                 source={require('../../../../assets/confetti.json')}

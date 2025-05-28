@@ -31,7 +31,7 @@ export default function Layout() {
           borderTopWidth: 0,
         },
         tabBarActiveTintColor: "#fff",
-        tabBarInactiveTintColor: "#a0a0a0",
+        tabBarInactiveTintColor: currentTheme == "piglet" || "earth" ? "#dedede" : "#c2c0c0",
         tabBarLabelStyle: {
           fontSize: showTabText ? 12 : 0,
           fontWeight: "bold",

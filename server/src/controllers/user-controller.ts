@@ -64,7 +64,25 @@ class UserController {
         const { link } = req.params
         try {
             await UserService.activate(link)
-            return res.redirect(`${MOBILE_APP_URL}activation/success`)
+            
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Redirect</title>
+                    <script>
+                        window.location.href = "${MOBILE_APP_URL}";
+                    </script>
+                </head>
+                <body>
+                    <h1>Переход в приложение...</h1>
+                    <p>Если в течение нескольких секунд вы всё ещё тут, выйдите из браузера и самостоятельно зайдите в приложение</p>
+                </body>
+                </html>
+            `
+            
+            res.send(html)
         } catch (err) {
             next(err)
         }
